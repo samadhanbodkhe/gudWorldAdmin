@@ -20,7 +20,6 @@ import {
   FiSave,
   FiX,
   FiUpload,
-  FiArrowLeft,
   FiPlusCircle,
   FiMinusCircle,
   FiClock,
@@ -47,13 +46,12 @@ const Products = () => {
     expiryDate: "",
     unit: "kg",
     unitPrice: "",
-    gstRate: "18", // Default GST rate
+    gstRate: "18",
     initialStock: "",
     description: "",
     location: "",
     minStockLevel: "10",
     category: "Traditional",
-    hsnCode: "",
   });
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -123,7 +121,6 @@ const Products = () => {
       location: product.location || "",
       minStockLevel: product.minStockLevel || "10",
       category: product.category || "Traditional",
-      hsnCode: product.hsnCode || "",
     });
     setImagePreviews(product.images || []);
     setImages([]);
@@ -220,7 +217,6 @@ const Products = () => {
         location: "",
         minStockLevel: "10",
         category: "Traditional",
-        hsnCode: "",
       });
       setImages([]);
       setImagePreviews([]);
@@ -241,7 +237,6 @@ const Products = () => {
       return;
     }
 
-    // FIX: Convert to number properly
     const qty = stockForm.adjustmentType === "add" 
       ? parseFloat(stockForm.quantity) 
       : -parseFloat(stockForm.quantity);
@@ -249,7 +244,7 @@ const Products = () => {
     try {
       await adjustStock({ 
         id: selectedProduct._id, 
-        qty: qty, // This should now be a proper number
+        qty: qty,
         note: stockForm.note 
       }).unwrap();
       
@@ -397,10 +392,7 @@ const Products = () => {
                   Stock
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price (with GST)
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  GST Rate
+                  Price
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -430,9 +422,6 @@ const Products = () => {
                         <div className="text-sm font-medium text-gray-900">
                           {product.name}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {product.hsnCode || "No HSN"}
-                        </div>
                       </div>
                     </div>
                   </td>
@@ -456,15 +445,9 @@ const Products = () => {
                     <div>
                       <div className="font-semibold">₹{product.priceWithGst}</div>
                       <div className="text-xs text-gray-500">
-                        Base: ₹{product.unitPrice}
+                        incl. {product.gstRate}% GST
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                      <FiPercent className="w-3 h-3 mr-1" />
-                      {product.gstRate}%
-                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -546,7 +529,7 @@ const Products = () => {
       {/* Add/Edit Product Modal */}
       {(showAddModal || showEditModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-[#5C3A21]">
@@ -569,7 +552,6 @@ const Products = () => {
                       location: "",
                       minStockLevel: "10",
                       category: "Traditional",
-                      hsnCode: "",
                     });
                     setImages([]);
                     setImagePreviews([]);
@@ -595,20 +577,6 @@ const Products = () => {
                         value={productForm.name}
                         onChange={handleProductInputChange}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        HSN Code
-                      </label>
-                      <input
-                        type="text"
-                        name="hsnCode"
-                        value={productForm.hsnCode}
-                        onChange={handleProductInputChange}
-                        placeholder="Enter HSN code"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
                       />
                     </div>
@@ -649,28 +617,6 @@ const Products = () => {
                         <option value="piece">Piece</option>
                       </select>
                     </div>
-                  </div>
-                </div>
-
-                {/* Pricing & GST */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing & GST</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Unit Price (₹) *
-                      </label>
-                      <input
-                        type="number"
-                        name="unitPrice"
-                        value={productForm.unitPrice}
-                        onChange={handleProductInputChange}
-                        required
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
-                    </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -688,6 +634,28 @@ const Products = () => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Pricing & Stock */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing & Stock</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Unit Price (₹) *
+                      </label>
+                      <input
+                        type="number"
+                        name="unitPrice"
+                        value={productForm.unitPrice}
+                        onChange={handleProductInputChange}
+                        required
+                        min="0"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                      />
+                    </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -696,17 +664,8 @@ const Products = () => {
                       <div className="text-lg font-semibold text-[#B97A57]">
                         ₹{calculatePriceWithGst(productForm.unitPrice, productForm.gstRate)}
                       </div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        Base: ₹{productForm.unitPrice || '0'} + GST: ₹{((parseFloat(productForm.unitPrice || 0) * parseFloat(productForm.gstRate || 0)) / 100).toFixed(2)}
-                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Stock Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Stock Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Initial Stock *
@@ -920,12 +879,6 @@ const Products = () => {
                           selectedProduct.isLowStock ? 'text-orange-600' : 'text-green-600'
                         }`}>
                           {selectedProduct.availableStock} {selectedProduct.unit}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">GST Rate</label>
-                        <p className="text-sm text-gray-900">
-                          {selectedProduct.gstRate}%
                         </p>
                       </div>
                       {selectedProduct.isLowStock && (
