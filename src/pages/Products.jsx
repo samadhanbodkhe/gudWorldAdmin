@@ -441,14 +441,16 @@ const Products = () => {
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div>
-                      <div className="font-semibold">₹{product.priceWithGst}</div>
-                      <div className="text-xs text-gray-500">
-                        incl. {product.gstRate}% GST
-                      </div>
-                    </div>
-                  </td>
+                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+  <div>
+    <div className="font-semibold">
+      ₹{product.priceWithGst || (product.unitPrice + (product.unitPrice * (product.gstRate || 0)) / 100).toFixed(2)}
+    </div>
+    <div className="text-xs text-gray-500">
+      incl. {product.gstRate}% GST
+    </div>
+  </div>
+</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
