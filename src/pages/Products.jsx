@@ -23,7 +23,8 @@ import {
   FiArrowLeft,
   FiPlusCircle,
   FiMinusCircle,
-  FiClock
+  FiClock,
+  FiPercent
 } from "react-icons/fi";
 
 const Products = () => {
@@ -42,16 +43,17 @@ const Products = () => {
   // State for forms
   const [productForm, setProductForm] = useState({
     name: "",
-    sku: "",
     productionDate: "",
     expiryDate: "",
     unit: "kg",
     unitPrice: "",
+    gstRate: "18", // Default GST rate
     initialStock: "",
     description: "",
     location: "",
     minStockLevel: "10",
     category: "Traditional",
+    hsnCode: "",
   });
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -86,6 +88,14 @@ const Products = () => {
   const products = data?.products || [];
   const totalPages = data?.totalPages || 1;
 
+  // Calculate price with GST for display
+  const calculatePriceWithGst = (unitPrice, gstRate) => {
+    const price = parseFloat(unitPrice) || 0;
+    const gst = parseFloat(gstRate) || 0;
+    const gstAmount = (price * gst) / 100;
+    return (price + gstAmount).toFixed(2);
+  };
+
   // Handler functions
   const handleDelete = async (product) => {
     if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
@@ -103,16 +113,17 @@ const Products = () => {
     setSelectedProduct(product);
     setProductForm({
       name: product.name || "",
-      sku: product.sku || "",
       productionDate: product.productionDate ? new Date(product.productionDate).toISOString().split('T')[0] : "",
       expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : "",
       unit: product.unit || "kg",
       unitPrice: product.unitPrice || "",
+      gstRate: product.gstRate?.toString() || "18",
       initialStock: product.initialStock || "",
       description: product.description || "",
       location: product.location || "",
       minStockLevel: product.minStockLevel || "10",
       category: product.category || "Traditional",
+      hsnCode: product.hsnCode || "",
     });
     setImagePreviews(product.images || []);
     setImages([]);
@@ -164,6 +175,13 @@ const Products = () => {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     
+    // Validate GST rate
+    const gstRate = parseFloat(productForm.gstRate);
+    if (gstRate < 0 || gstRate > 100) {
+      toast.error("GST rate must be between 0 and 100");
+      return;
+    }
+
     try {
       const submitData = new FormData();
       
@@ -192,16 +210,17 @@ const Products = () => {
       // Reset form
       setProductForm({
         name: "",
-        sku: "",
         productionDate: "",
         expiryDate: "",
         unit: "kg",
         unitPrice: "",
+        gstRate: "18",
         initialStock: "",
         description: "",
         location: "",
         minStockLevel: "10",
         category: "Traditional",
+        hsnCode: "",
       });
       setImages([]);
       setImagePreviews([]);
@@ -214,39 +233,39 @@ const Products = () => {
     }
   };
 
-const handleStockSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!stockForm.quantity || parseFloat(stockForm.quantity) <= 0) {
-    toast.error("Please enter a valid quantity");
-    return;
-  }
-
-  // FIX: Convert to number properly
-  const qty = stockForm.adjustmentType === "add" 
-    ? parseFloat(stockForm.quantity) 
-    : -parseFloat(stockForm.quantity);
-
-  try {
-    await adjustStock({ 
-      id: selectedProduct._id, 
-      qty: qty, // This should now be a proper number
-      note: stockForm.note 
-    }).unwrap();
+  const handleStockSubmit = async (e) => {
+    e.preventDefault();
     
-    toast.success("Stock adjusted successfully");
-    setShowStockModal(false);
-    setStockForm({
-      adjustmentType: "add",
-      quantity: "",
-      note: ""
-    });
-    refetch();
-  } catch (error) {
-    console.error("Stock adjustment error:", error);
-    toast.error(error.data?.error || "Failed to adjust stock");
-  }
-};
+    if (!stockForm.quantity || parseFloat(stockForm.quantity) <= 0) {
+      toast.error("Please enter a valid quantity");
+      return;
+    }
+
+    // FIX: Convert to number properly
+    const qty = stockForm.adjustmentType === "add" 
+      ? parseFloat(stockForm.quantity) 
+      : -parseFloat(stockForm.quantity);
+
+    try {
+      await adjustStock({ 
+        id: selectedProduct._id, 
+        qty: qty, // This should now be a proper number
+        note: stockForm.note 
+      }).unwrap();
+      
+      toast.success("Stock adjusted successfully");
+      setShowStockModal(false);
+      setStockForm({
+        adjustmentType: "add",
+        quantity: "",
+        note: ""
+      });
+      refetch();
+    } catch (error) {
+      console.error("Stock adjustment error:", error);
+      toast.error(error.data?.error || "Failed to adjust stock");
+    }
+  };
 
   const resetFilters = () => {
     setSearch("");
@@ -378,7 +397,10 @@ const handleStockSubmit = async (e) => {
                   Stock
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price
+                  Price (with GST)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  GST Rate
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -409,7 +431,7 @@ const handleStockSubmit = async (e) => {
                           {product.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {product.sku || "No SKU"}
+                          {product.hsnCode || "No HSN"}
                         </div>
                       </div>
                     </div>
@@ -431,7 +453,18 @@ const handleStockSubmit = async (e) => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{product.unitPrice}
+                    <div>
+                      <div className="font-semibold">₹{product.priceWithGst}</div>
+                      <div className="text-xs text-gray-500">
+                        Base: ₹{product.unitPrice}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <FiPercent className="w-3 h-3 mr-1" />
+                      {product.gstRate}%
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -513,7 +546,7 @@ const handleStockSubmit = async (e) => {
       {/* Add/Edit Product Modal */}
       {(showAddModal || showEditModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-[#5C3A21]">
@@ -526,16 +559,17 @@ const handleStockSubmit = async (e) => {
                     setSelectedProduct(null);
                     setProductForm({
                       name: "",
-                      sku: "",
                       productionDate: "",
                       expiryDate: "",
                       unit: "kg",
                       unitPrice: "",
+                      gstRate: "18",
                       initialStock: "",
                       description: "",
                       location: "",
                       minStockLevel: "10",
                       category: "Traditional",
+                      hsnCode: "",
                     });
                     setImages([]);
                     setImagePreviews([]);
@@ -567,13 +601,14 @@ const handleStockSubmit = async (e) => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        SKU
+                        HSN Code
                       </label>
                       <input
                         type="text"
-                        name="sku"
-                        value={productForm.sku}
+                        name="hsnCode"
+                        value={productForm.hsnCode}
                         onChange={handleProductInputChange}
+                        placeholder="Enter HSN code"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
                       />
                     </div>
@@ -617,9 +652,9 @@ const handleStockSubmit = async (e) => {
                   </div>
                 </div>
 
-                {/* Pricing & Stock */}
+                {/* Pricing & GST */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing & Stock</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing & GST</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -637,6 +672,41 @@ const handleStockSubmit = async (e) => {
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        GST Rate (%) *
+                      </label>
+                      <input
+                        type="number"
+                        name="gstRate"
+                        value={productForm.gstRate}
+                        onChange={handleProductInputChange}
+                        required
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Final Price (with GST)
+                      </label>
+                      <div className="text-lg font-semibold text-[#B97A57]">
+                        ₹{calculatePriceWithGst(productForm.unitPrice, productForm.gstRate)}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        Base: ₹{productForm.unitPrice || '0'} + GST: ₹{((parseFloat(productForm.unitPrice || 0) * parseFloat(productForm.gstRate || 0)) / 100).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stock Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Stock Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Initial Stock *
@@ -850,6 +920,12 @@ const handleStockSubmit = async (e) => {
                           selectedProduct.isLowStock ? 'text-orange-600' : 'text-green-600'
                         }`}>
                           {selectedProduct.availableStock} {selectedProduct.unit}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">GST Rate</label>
+                        <p className="text-sm text-gray-900">
+                          {selectedProduct.gstRate}%
                         </p>
                       </div>
                       {selectedProduct.isLowStock && (
