@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useLoginAdminMutation } from "../redux/api/authApi";
 import { toast } from "react-toastify";
 
@@ -8,12 +8,13 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
-  const { adminToken } = useSelector(state => state.auth);
+  const { isAuthenticated, isLoading: authLoading } = useSelector(state => state.auth);
   const [loginAdmin, { isLoading: loginLoading }] = useLoginAdminMutation();
 
-  // Redirect if already authenticated
-  if (adminToken) {
+  // ✅ Redirect if already authenticated - only after auth loading is complete
+  if (isAuthenticated && !authLoading) {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
@@ -42,13 +43,13 @@ const Login = () => {
     try {
       const response = await loginAdmin({ email }).unwrap();
       
-      if (response.message === "OTP sent successfully") {
+      if (response.success) {
         // Store email for OTP verification
         localStorage.setItem("adminEmail", email);
         toast.success("OTP sent to your email!");
         navigate("/verify-otp");
       } else {
-        toast.error("Failed to send OTP. Please try again.");
+        toast.error(response.message || "Failed to send OTP. Please try again.");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -57,6 +58,18 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F8F6F4] to-[#E8D5C4] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-[#B97A57] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#5C3A21]">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F8F6F4] to-[#E8D5C4] flex items-center justify-center p-4">

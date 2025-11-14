@@ -1,68 +1,27 @@
-import React, { useState, useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
-import LoadingSpinner from "../pages/LoadingSpinner";
-import { useVerifyAdminTokenQuery } from "../redux/api/authApi";
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const ProtectedRoute = ({ children }) => {
-  const [isVerifying, setIsVerifying] = useState(true);
-  const { adminToken } = useSelector(state => state.auth);
-  const location = useLocation();
-  
-  // Use the token verification query
-  const { 
-    data: verifyData, 
-    error, 
-    isLoading, 
-    isError 
-  } = useVerifyAdminTokenQuery(undefined, {
-    skip: !adminToken, // Skip if no token
-  });
+  const { isAuthenticated, isLoading } = useSelector(state => state.auth);
 
-  useEffect(() => {
-    // Set a timeout to prevent infinite loading
-    const timer = setTimeout(() => {
-      setIsVerifying(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Show loading spinner while verifying token
-  if ((adminToken && isLoading) || isVerifying) {
-    return <LoadingSpinner />;
-  }
-
-  // If no token, redirect to login
-  if (!adminToken) {
+  // Show loading while checking authentication
+  if (isLoading) {
     return (
-      <Navigate 
-        to="/login" 
-        replace 
-        state={{ from: location.pathname }} 
-      />
+      <div className="min-h-screen bg-gradient-to-br from-[#F8F6F4] to-[#E8D5C4] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-[#B97A57] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#5C3A21]">Loading...</p>
+        </div>
+      </div>
     );
   }
 
-  // If token verification failed, redirect to login
-  if (adminToken && isError) {
-    console.error("Token verification failed:", error);
-    // Clear invalid token from storage
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("admin");
-    return (
-      <Navigate 
-        to="/login" 
-        replace 
-        state={{ 
-          from: location.pathname,
-          message: "Session expired. Please login again." 
-        }} 
-      />
-    );
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/admin/login" replace />;
   }
 
-  // If token is valid, render children
   return children;
 };
 
