@@ -19,8 +19,6 @@ import {
   FiX,
   FiCheckCircle,
   FiClock,
-  FiCreditCard,
-  FiDollarSign as FiCash,
 } from "react-icons/fi";
 import { useGetCancelledOrdersQuery } from "../redux/api/ordersApi";
 import { 
@@ -94,17 +92,10 @@ const Refunds = () => {
   const refundsTotalPages = refundsData?.pagination?.totalPages || 1;
   const refundsTotalItems = refundsData?.pagination?.total || 0;
 
-  // Filter pending refunds (only orders that haven't been refunded yet AND are online payments)
+  // Filter pending refunds (only orders that haven't been refunded yet)
   const pendingRefundsOrders = cancelledOrders.filter(order => 
     order.paymentStatus !== 'REFUNDED' && 
-    order.refundStatus !== 'PROCESSED' &&
-    order.paymentMethod === 'online' && // Only online payments are eligible for refunds
-    order.paymentStatus === 'PAID' // Only paid orders can be refunded
-  );
-
-  // Get COD orders (for display only, no refund actions)
-  const codCancelledOrders = cancelledOrders.filter(order => 
-    order.paymentMethod === 'cod'
+    order.refundStatus !== 'PROCESSED'
   );
 
   // Status colors
@@ -118,20 +109,7 @@ const Refunds = () => {
     PENDING: "bg-orange-50 text-orange-800 border border-orange-200",
     PROCESSED: "bg-green-50 text-green-800 border border-green-200",
     FAILED: "bg-red-50 text-red-800 border border-red-200",
-  };
-
-  // Payment method colors and icons
-  const paymentMethodConfig = {
-    online: {
-      color: "bg-blue-50 text-blue-800 border border-blue-200",
-      icon: FiCreditCard,
-      label: "Online Payment"
-    },
-    cod: {
-      color: "bg-gray-50 text-gray-800 border border-gray-200",
-      icon: FiCash,
-      label: "Cash on Delivery"
-    }
+    CANCELLED: "bg-gray-50 text-gray-800 border border-gray-200",
   };
 
   // Handler functions
@@ -193,13 +171,6 @@ const Refunds = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(amount);
-  };
-
-  // Check if order is eligible for refund
-  const isRefundEligible = (order) => {
-    return order.paymentMethod === 'online' && 
-           order.paymentStatus === 'PAID' && 
-           order.refundStatus !== 'PROCESSED';
   };
 
   // Loading state
@@ -275,206 +246,166 @@ const Refunds = () => {
   }
 
   // Mobile Cancelled Order Card Component
-  const MobileCancelledOrderCard = ({ order }) => {
-    const isEligible = isRefundEligible(order);
-    const paymentConfig = paymentMethodConfig[order.paymentMethod] || paymentMethodConfig.online;
-    const PaymentIcon = paymentConfig.icon;
-
-    return (
-      <div className={`bg-white rounded-2xl shadow-lg border ${
-        isEligible ? "border-orange-100" : "border-gray-200"
-      } p-4 mb-4 transition-all duration-300 hover:shadow-xl`}>
-        {/* Header */}
-        <div className="flex justify-between items-start mb-3">
-          <div>
-            <div className="text-sm font-bold text-gray-900">
-              Order #{order.invoiceNumber}
-            </div>
-            <div className="text-xs text-gray-600 flex items-center mt-1">
-              <FiPackage className="w-3 h-3 mr-1" />
-              {order.items?.length || 0} items
-            </div>
+  const MobileCancelledOrderCard = ({ order }) => (
+    <div className="bg-white rounded-2xl shadow-lg border border-orange-100 p-4 mb-4 transition-all duration-300 hover:shadow-xl">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <div className="text-sm font-bold text-orange-900">
+            Order #{order.invoiceNumber}
           </div>
-          <div className="text-right">
-            <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${orderStatusColors[order.status]}`}>
-              <FiXCircle className="w-3 h-3" />
-              {order.status}
-            </span>
-            <div className="text-xs text-gray-500 mt-1 flex items-center">
-              <FiCalendar className="w-3 h-3 mr-1" />
-              {formatDate(order.updatedAt)}
-            </div>
+          <div className="text-xs text-orange-600 flex items-center mt-1">
+            <FiPackage className="w-3 h-3 mr-1" />
+            {order.items?.length || 0} items
           </div>
         </div>
-
-        {/* Payment Method */}
-        <div className="mb-3">
-          <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 w-fit ${paymentConfig.color}`}>
-            <PaymentIcon className="w-3 h-3" />
-            {paymentConfig.label}
+        <div className="text-right">
+          <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${orderStatusColors[order.status]}`}>
+            <FiXCircle className="w-3 h-3" />
+            {order.status}
           </span>
-          {order.paymentStatus && (
-            <div className="text-xs text-gray-600 mt-1">
-              Payment Status: <span className="font-medium capitalize">{order.paymentStatus.toLowerCase()}</span>
-            </div>
-          )}
-        </div>
-
-        {/* User Info */}
-        <div className="mb-3 p-3 bg-gray-50 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-200">
-              <FiUsers className="w-5 h-5 text-gray-600" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 text-sm">
-                {order.user?.name || 'Customer'}
-              </h4>
-              <p className="text-gray-600 text-xs">
-                {order.user?.email || 'N/A'}
-              </p>
-            </div>
+          <div className="text-xs text-orange-500 mt-1 flex items-center">
+            <FiCalendar className="w-3 h-3 mr-1" />
+            {formatDate(order.updatedAt)}
           </div>
-        </div>
-
-        {/* Amount & Reason */}
-        <div className="mb-3">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-gray-700 text-sm">Order Amount:</span>
-            <span className="font-bold text-green-600 text-sm">
-              {formatCurrency(order.totalAmount || order.finalAmount)}
-            </span>
-          </div>
-          {order.cancellationReason && (
-            <div className="text-gray-600 text-xs">
-              <strong>Cancellation Reason:</strong> {order.cancellationReason}
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-          <button
-            onClick={() => {
-              setSelectedOrder(order);
-              setShowDetailsModal(true);
-            }}
-            className="flex items-center gap-1 text-gray-700 hover:text-gray-900 transition-colors p-2 text-xs font-medium cursor-pointer"
-          >
-            <FiEye className="w-3 h-3" />
-            Details
-          </button>
-          
-          {isEligible ? (
-            <button
-              onClick={() => handleOrderSelect(order)}
-              disabled={processingOrderRefund}
-              className="flex items-center gap-1 bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <FiDollarSign className="w-3 h-3" />
-              Process Refund
-            </button>
-          ) : (
-            <div className="text-xs text-gray-500 px-3 py-2 bg-gray-100 rounded-lg">
-              {order.paymentMethod === 'cod' ? 'COD - No Refund' : 'Not Eligible'}
-            </div>
-          )}
         </div>
       </div>
-    );
-  };
+
+      {/* User Info */}
+      <div className="mb-3 p-3 bg-orange-50 rounded-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-orange-200">
+            <FiUsers className="w-5 h-5 text-orange-600" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-orange-900 text-sm">
+              {order.user?.name || 'Customer'}
+            </h4>
+            <p className="text-orange-600 text-xs">
+              {order.user?.email || 'N/A'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Amount & Reason */}
+      <div className="mb-3">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-orange-700 text-sm">Order Amount:</span>
+          <span className="font-bold text-green-600 text-sm">
+            {formatCurrency(order.totalAmount || order.finalAmount)}
+          </span>
+        </div>
+        {order.cancellationReason && (
+          <div className="text-orange-600 text-xs">
+            <strong>Cancellation Reason:</strong> {order.cancellationReason}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-between items-center pt-3 border-t border-orange-200">
+        <button
+          onClick={() => {
+            setSelectedOrder(order);
+            setShowDetailsModal(true);
+          }}
+          className="flex items-center gap-1 text-orange-700 hover:text-orange-900 transition-colors p-2 text-xs font-medium cursor-pointer"
+        >
+          <FiEye className="w-3 h-3" />
+          Details
+        </button>
+        
+        <button
+          onClick={() => handleOrderSelect(order)}
+          disabled={processingOrderRefund}
+          className="flex items-center gap-1 bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <FiDollarSign className="w-3 h-3" />
+          Process Refund
+        </button>
+      </div>
+    </div>
+  );
 
   // Mobile Refund Card Component
-  const MobileRefundCard = ({ refund }) => {
-    const paymentConfig = paymentMethodConfig[refund.paymentMethod] || paymentMethodConfig.online;
-    const PaymentIcon = paymentConfig.icon;
-
-    return (
-      <div className="bg-white rounded-2xl shadow-lg border border-green-100 p-4 mb-4 transition-all duration-300 hover:shadow-xl">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-3">
-          <div>
-            <div className="text-sm font-bold text-green-900">
-              Refund #{refund.refundId}
-            </div>
-            <div className="text-xs text-green-600 flex items-center mt-1">
-              <FiShoppingBag className="w-3 h-3 mr-1" />
-              Order #{refund.order?.invoiceNumber}
-            </div>
+  const MobileRefundCard = ({ refund }) => (
+    <div className="bg-white rounded-2xl shadow-lg border border-green-100 p-4 mb-4 transition-all duration-300 hover:shadow-xl">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <div className="text-sm font-bold text-green-900">
+            Refund #{refund.refundId}
           </div>
-          <div className="text-right">
-            <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${orderStatusColors[refund.status]}`}>
-              {refund.status === 'PROCESSED' || refund.status === 'REFUND_COMPLETED' ? (
-                <FiCheckCircle className="w-3 h-3" />
-              ) : (
-                <FiClock className="w-3 h-3" />
-              )}
-              {refund.status}
-            </span>
-            <div className="text-xs text-green-500 mt-1 flex items-center">
-              <FiCalendar className="w-3 h-3 mr-1" />
-              {formatDate(refund.processedAt || refund.createdAt)}
-            </div>
+          <div className="text-xs text-green-600 flex items-center mt-1">
+            <FiShoppingBag className="w-3 h-3 mr-1" />
+            Order #{refund.order?.invoiceNumber}
           </div>
         </div>
-
-        {/* Payment Method */}
-        <div className="mb-3">
-          <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 w-fit ${paymentConfig.color}`}>
-            <PaymentIcon className="w-3 h-3" />
-            {paymentConfig.label}
+        <div className="text-right">
+          <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${orderStatusColors[refund.status]}`}>
+            {refund.status === 'PROCESSED' || refund.status === 'REFUND_COMPLETED' ? (
+              <FiCheckCircle className="w-3 h-3" />
+            ) : (
+              <FiClock className="w-3 h-3" />
+            )}
+            {refund.status}
           </span>
-        </div>
-
-        {/* User Info */}
-        <div className="mb-3 p-3 bg-green-50 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-green-200">
-              <FiUsers className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-green-900 text-sm">
-                {refund.user?.name || 'Customer'}
-              </h4>
-              <p className="text-green-600 text-xs">
-                {refund.user?.email || 'N/A'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Amount & Reason */}
-        <div className="mb-3">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-green-700 text-sm">Refund Amount:</span>
-            <span className="font-bold text-green-600 text-sm">
-              {formatCurrency(refund.refundAmount)}
-            </span>
-          </div>
-          {refund.refundReason && (
-            <div className="text-green-600 text-xs">
-              <strong>Refund Reason:</strong> {refund.refundReason}
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-between items-center pt-3 border-t border-green-200">
-          <button
-            onClick={() => handleRefundSelect(refund)}
-            className="flex items-center gap-1 text-green-700 hover:text-green-900 transition-colors p-2 text-xs font-medium cursor-pointer"
-          >
-            <FiEye className="w-3 h-3" />
-            View Details
-          </button>
-          
-          <div className="text-green-600 text-xs font-medium">
-            {refund.paymentMethod || 'Payment Gateway'}
+          <div className="text-xs text-green-500 mt-1 flex items-center">
+            <FiCalendar className="w-3 h-3 mr-1" />
+            {formatDate(refund.processedAt || refund.createdAt)}
           </div>
         </div>
       </div>
-    );
-  };
+
+      {/* User Info */}
+      <div className="mb-3 p-3 bg-green-50 rounded-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-green-200">
+            <FiUsers className="w-5 h-5 text-green-600" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-green-900 text-sm">
+              {refund.user?.name || 'Customer'}
+            </h4>
+            <p className="text-green-600 text-xs">
+              {refund.user?.email || 'N/A'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Amount & Reason */}
+      <div className="mb-3">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-green-700 text-sm">Refund Amount:</span>
+          <span className="font-bold text-green-600 text-sm">
+            {formatCurrency(refund.refundAmount)}
+          </span>
+        </div>
+        {refund.refundReason && (
+          <div className="text-green-600 text-xs">
+            <strong>Refund Reason:</strong> {refund.refundReason}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-between items-center pt-3 border-t border-green-200">
+        <button
+          onClick={() => handleRefundSelect(refund)}
+          className="flex items-center gap-1 text-green-700 hover:text-green-900 transition-colors p-2 text-xs font-medium cursor-pointer"
+        >
+          <FiEye className="w-3 h-3" />
+          View Details
+        </button>
+        
+        <div className="text-green-600 text-xs font-medium">
+          {refund.paymentMethod || 'Payment Gateway'}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-6 px-4">
@@ -547,7 +478,7 @@ const Refunds = () => {
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-sm text-blue-600 flex items-center gap-2 cursor-default">
                   <FiFilter className="w-4 h-4" />
-                  {pendingRefundsOrders.length} pending refunds found • {codCancelledOrders.length} COD orders
+                  {pendingRefundsOrders.length} pending refunds found
                 </div>
                 <div className="text-sm text-blue-600 cursor-default">
                   Page {page} of {totalPages}
@@ -563,9 +494,6 @@ const Refunds = () => {
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-orange-900 uppercase tracking-wider cursor-default">
                         Order Details
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-orange-900 uppercase tracking-wider cursor-default">
-                        Payment Method
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-orange-900 uppercase tracking-wider cursor-default">
                         Customer
@@ -585,121 +513,98 @@ const Refunds = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
-                    {cancelledOrders.map((order) => {
-                      const isEligible = isRefundEligible(order);
-                      const paymentConfig = paymentMethodConfig[order.paymentMethod] || paymentMethodConfig.online;
-                      const PaymentIcon = paymentConfig.icon;
-
-                      return (
-                        <tr key={order._id} className={`hover:bg-orange-50 transition-colors duration-200 ${
-                          !isEligible ? 'bg-gray-50' : ''
-                        }`}>
-                          <td className="px-6 py-4 cursor-default">
-                            <div>
-                              <div className="font-semibold text-gray-900 text-sm">
-                                Order #{order.invoiceNumber}
-                              </div>
-                              <div className="text-gray-600 text-xs mt-1">
-                                {order.items?.length || 0} items
-                              </div>
+                    {pendingRefundsOrders.map((order) => (
+                      <tr key={order._id} className="hover:bg-orange-50 transition-colors duration-200">
+                        <td className="px-6 py-4 cursor-default">
+                          <div>
+                            <div className="font-semibold text-orange-900 text-sm">
+                              Order #{order.invoiceNumber}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${paymentConfig.color}`}>
-                                <PaymentIcon className="w-3 h-3" />
-                                {paymentConfig.label}
-                              </span>
+                            <div className="text-orange-600 text-xs mt-1">
+                              {order.items?.length || 0} items
                             </div>
-                            {order.paymentStatus && (
-                              <div className="text-gray-600 text-xs mt-1">
-                                Status: <span className="font-medium capitalize">{order.paymentStatus.toLowerCase()}</span>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <div>
-                              <div className="font-medium text-gray-900 text-sm">
-                                {order.user?.name || 'Customer'}
-                              </div>
-                              <div className="text-gray-600 text-xs">
-                                {order.user?.email || 'N/A'}
-                              </div>
-                              <div className="text-gray-500 text-xs">
-                                {order.user?.phone || "N/A"}
-                              </div>
+                            <div className="text-orange-500 text-xs flex items-center gap-1 mt-1">
+                              <FiPackage className="w-3 h-3" />
+                              {order.paymentMethod || 'N/A'}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <div className="font-bold text-green-600 text-sm">
-                              {formatCurrency(order.totalAmount || order.finalAmount)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 cursor-default">
+                          <div>
+                            <div className="font-medium text-orange-900 text-sm">
+                              {order.user?.name || 'Customer'}
                             </div>
-                            <div className="text-gray-600 text-xs">
-                              Paid: {formatCurrency(order.amountPaid || order.finalAmount)}
+                            <div className="text-orange-600 text-xs">
+                              {order.user?.email || 'N/A'}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1 w-fit ${orderStatusColors[order.status]}`}>
-                              <FiXCircle className="w-3 h-3" />
-                              {order.status}
-                            </span>
-                            {order.cancellationReason && (
-                              <div className="text-gray-600 text-xs mt-2 max-w-xs">
-                                {order.cancellationReason}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <div className="text-gray-900 text-sm">{formatDate(order.updatedAt)}</div>
-                            <div className="text-gray-500 text-xs">
-                              Created: {formatDate(order.createdAt)}
+                            <div className="text-orange-500 text-xs">
+                              {order.user?.phone || "N/A"}
                             </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => {
-                                  setSelectedOrder(order);
-                                  setShowDetailsModal(true);
-                                }}
-                                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200 cursor-pointer"
-                                title="View Details"
-                              >
-                                <FiEye className="w-4 h-4" />
-                              </button>
-                              {isEligible ? (
-                                <button
-                                  onClick={() => handleOrderSelect(order)}
-                                  disabled={processingOrderRefund}
-                                  className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                                  title="Process Refund"
-                                >
-                                  <FiDollarSign className="w-4 h-4" />
-                                  Refund
-                                </button>
-                              ) : (
-                                <div className="text-xs text-gray-500 px-3 py-2 bg-gray-100 rounded-lg">
-                                  {order.paymentMethod === 'cod' ? 'COD - No Refund' : 'Not Eligible'}
-                                </div>
-                              )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 cursor-default">
+                          <div className="font-bold text-green-600 text-sm">
+                            {formatCurrency(order.totalAmount || order.finalAmount)}
+                          </div>
+                          <div className="text-orange-600 text-xs">
+                            Paid: {formatCurrency(order.amountPaid || order.finalAmount)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 cursor-default">
+                          <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1 w-fit ${orderStatusColors[order.status]}`}>
+                            <FiXCircle className="w-3 h-3" />
+                            {order.status}
+                          </span>
+                          {order.cancellationReason && (
+                            <div className="text-orange-600 text-xs mt-2 max-w-xs">
+                              {order.cancellationReason}
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          )}
+                        </td>
+                        <td className="px-6 py-4 cursor-default">
+                          <div className="text-orange-900 text-sm">{formatDate(order.updatedAt)}</div>
+                          <div className="text-orange-500 text-xs">
+                            Created: {formatDate(order.createdAt)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowDetailsModal(true);
+                              }}
+                              className="p-2 text-orange-600 hover:text-orange-800 hover:bg-orange-100 rounded-lg transition-all duration-200 cursor-pointer"
+                              title="View Details"
+                            >
+                              <FiEye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleOrderSelect(order)}
+                              disabled={processingOrderRefund}
+                              className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                              title="Process Refund"
+                            >
+                              <FiDollarSign className="w-4 h-4" />
+                              Refund
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
 
               {/* No Cancelled Orders State */}
-              {cancelledOrders.length === 0 && (
+              {pendingRefundsOrders.length === 0 && (
                 <div className="text-center py-12 cursor-default">
                   <FiShoppingBag className="mx-auto w-16 h-16 text-orange-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-orange-900 mb-2">No cancelled orders found</h3>
+                  <h3 className="text-lg font-semibold text-orange-900 mb-2">No pending refunds found</h3>
                   <p className="text-orange-600 mb-6">
                     {search 
                       ? `No cancelled orders found with current search` 
-                      : "No cancelled orders pending refund"
+                      : "No pending refunds at the moment"
                     }
                   </p>
                 </div>
@@ -708,18 +613,18 @@ const Refunds = () => {
 
             {/* Mobile Lists for Pending */}
             <div className="lg:hidden space-y-4">
-              {cancelledOrders.map((order) => (
+              {pendingRefundsOrders.map((order) => (
                 <MobileCancelledOrderCard key={order._id} order={order} />
               ))}
               
-              {cancelledOrders.length === 0 && (
+              {pendingRefundsOrders.length === 0 && (
                 <div className="text-center py-12 bg-white rounded-2xl shadow-lg border border-orange-200 cursor-default">
                   <FiShoppingBag className="mx-auto w-16 h-16 text-orange-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-orange-900 mb-2">No cancelled orders found</h3>
+                  <h3 className="text-lg font-semibold text-orange-900 mb-2">No pending refunds found</h3>
                   <p className="text-orange-600 mb-6">
                     {search 
                       ? `No cancelled orders found with current search` 
-                      : "No cancelled orders pending refund"
+                      : "No pending refunds at the moment"
                     }
                   </p>
                 </div>
@@ -731,7 +636,7 @@ const Refunds = () => {
               <div className="bg-white rounded-2xl shadow-lg border border-blue-200 p-6">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                   <div className="text-sm text-blue-600 cursor-default">
-                    Showing page {page} of {totalPages} • {pendingRefundsOrders.length} refundable orders • {codCancelledOrders.length} COD orders
+                    Showing page {page} of {totalPages} • {pendingRefundsOrders.length} pending refunds
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -811,9 +716,6 @@ const Refunds = () => {
                         Refund Details
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-green-900 uppercase tracking-wider cursor-default">
-                        Payment Method
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-green-900 uppercase tracking-wider cursor-default">
                         Customer
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-green-900 uppercase tracking-wider cursor-default">
@@ -831,86 +733,77 @@ const Refunds = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-green-100">
-                    {refunds.map((refund) => {
-                      const paymentConfig = paymentMethodConfig[refund.paymentMethod] || paymentMethodConfig.online;
-                      const PaymentIcon = paymentConfig.icon;
-
-                      return (
-                        <tr key={refund._id} className="hover:bg-green-50 transition-colors duration-200">
-                          <td className="px-6 py-4 cursor-default">
-                            <div>
-                              <div className="font-semibold text-green-900 text-sm">
-                                Refund #{refund.refundId}
-                              </div>
-                              <div className="text-green-600 text-xs mt-1">
-                                Order #{refund.order?.invoiceNumber}
-                              </div>
+                    {refunds.map((refund) => (
+                      <tr key={refund._id} className="hover:bg-green-50 transition-colors duration-200">
+                        <td className="px-6 py-4 cursor-default">
+                          <div>
+                            <div className="font-semibold text-green-900 text-sm">
+                              Refund #{refund.refundId}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${paymentConfig.color}`}>
-                                <PaymentIcon className="w-3 h-3" />
-                                {paymentConfig.label}
-                              </span>
+                            <div className="text-green-600 text-xs mt-1">
+                              Order #{refund.order?.invoiceNumber}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <div>
-                              <div className="font-medium text-green-900 text-sm">
-                                {refund.user?.name || 'Customer'}
-                              </div>
-                              <div className="text-green-600 text-xs">
-                                {refund.user?.email || 'N/A'}
-                              </div>
-                              <div className="text-green-500 text-xs">
-                                {refund.user?.phone || "N/A"}
-                              </div>
+                            <div className="text-green-500 text-xs flex items-center gap-1 mt-1">
+                              <FiPackage className="w-3 h-3" />
+                              {refund.paymentMethod || 'Payment Gateway'}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <div className="font-bold text-green-600 text-sm">
-                              {formatCurrency(refund.refundAmount)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 cursor-default">
+                          <div>
+                            <div className="font-medium text-green-900 text-sm">
+                              {refund.user?.name || 'Customer'}
                             </div>
                             <div className="text-green-600 text-xs">
-                              Order: {formatCurrency(refund.order?.totalAmount)}
+                              {refund.user?.email || 'N/A'}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1 w-fit ${orderStatusColors[refund.status]}`}>
-                              {refund.status === 'PROCESSED' || refund.status === 'REFUND_COMPLETED' ? (
-                                <FiCheckCircle className="w-3 h-3" />
-                              ) : (
-                                <FiClock className="w-3 h-3" />
-                              )}
-                              {refund.status}
-                            </span>
-                            {refund.refundReason && (
-                              <div className="text-green-600 text-xs mt-2 max-w-xs">
-                                {refund.refundReason}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 cursor-default">
-                            <div className="text-green-900 text-sm">{formatDate(refund.processedAt || refund.createdAt)}</div>
                             <div className="text-green-500 text-xs">
-                              Created: {formatDate(refund.createdAt)}
+                              {refund.user?.phone || "N/A"}
                             </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => handleRefundSelect(refund)}
-                                className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-lg transition-all duration-200 cursor-pointer"
-                                title="View Details"
-                              >
-                                <FiEye className="w-4 h-4" />
-                              </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 cursor-default">
+                          <div className="font-bold text-green-600 text-sm">
+                            {formatCurrency(refund.refundAmount)}
+                          </div>
+                          <div className="text-green-600 text-xs">
+                            Order: {formatCurrency(refund.order?.totalAmount)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 cursor-default">
+                          <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1 w-fit ${orderStatusColors[refund.status]}`}>
+                            {refund.status === 'PROCESSED' || refund.status === 'REFUND_COMPLETED' ? (
+                              <FiCheckCircle className="w-3 h-3" />
+                            ) : (
+                              <FiClock className="w-3 h-3" />
+                            )}
+                            {refund.status}
+                          </span>
+                          {refund.refundReason && (
+                            <div className="text-green-600 text-xs mt-2 max-w-xs">
+                              {refund.refundReason}
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          )}
+                        </td>
+                        <td className="px-6 py-4 cursor-default">
+                          <div className="text-green-900 text-sm">{formatDate(refund.processedAt || refund.createdAt)}</div>
+                          <div className="text-green-500 text-xs">
+                            Created: {formatDate(refund.createdAt)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => handleRefundSelect(refund)}
+                              className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-lg transition-all duration-200 cursor-pointer"
+                              title="View Details"
+                            >
+                              <FiEye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -1008,14 +901,6 @@ const Refunds = () => {
                       <div className="flex justify-between">
                         <span className="text-orange-700">Customer:</span>
                         <span className="text-orange-900">{selectedOrder.user?.name || 'Customer'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-orange-700">Payment Method:</span>
-                        <span className="text-orange-900 capitalize">{selectedOrder.paymentMethod}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-orange-700">Payment Status:</span>
-                        <span className="text-orange-900 capitalize">{selectedOrder.paymentStatus}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-orange-700">Total Amount:</span>
@@ -1163,10 +1048,7 @@ const Refunds = () => {
                       <div>
                         <label className="block text-sm font-medium text-green-700 mb-1">Refundable Amount</label>
                         <p className="text-green-900 font-semibold text-lg">
-                          {isRefundEligible(selectedOrder) 
-                            ? formatCurrency(selectedOrder.totalAmount || selectedOrder.finalAmount)
-                            : 'Not Eligible'
-                          }
+                          {formatCurrency(selectedOrder.totalAmount || selectedOrder.finalAmount)}
                         </p>
                       </div>
                     </div>
@@ -1233,20 +1115,18 @@ const Refunds = () => {
                   </div>
 
                   {/* Action Button */}
-                  {isRefundEligible(selectedOrder) && (
-                    <div className="text-center pt-6">
-                      <button
-                        onClick={() => {
-                          setShowDetailsModal(false);
-                          handleOrderSelect(selectedOrder);
-                        }}
-                        className="bg-orange-600 text-white px-8 py-3 rounded-xl hover:bg-orange-700 transition-all duration-200 font-medium flex items-center gap-2 mx-auto cursor-pointer"
-                      >
-                        <FiDollarSign className="w-5 h-5" />
-                        Process Refund for this Order
-                      </button>
-                    </div>
-                  )}
+                  <div className="text-center pt-6">
+                    <button
+                      onClick={() => {
+                        setShowDetailsModal(false);
+                        handleOrderSelect(selectedOrder);
+                      }}
+                      className="bg-orange-600 text-white px-8 py-3 rounded-xl hover:bg-orange-700 transition-all duration-200 font-medium flex items-center gap-2 mx-auto cursor-pointer"
+                    >
+                      <FiDollarSign className="w-5 h-5" />
+                      Process Refund for this Order
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
