@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useLocation, Router } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
@@ -14,8 +14,6 @@ import Profile from "./pages/Profile";
 import VerifyOtp from "./pages/VerifyOtp ";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import Refunds from "./pages/Refunds ";
-import AuthInitializer from "./components/AuthInitializer";
-import { ToastContainer } from "react-toastify";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -45,21 +43,8 @@ const App = () => {
   }
 
   return (
-<Router>
-<AuthInitializer/>
-     <div className="App">
-       <ToastContainer
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-            />
-        <Routes>
+    <div className="App">
+      <Routes>
         {/* Public routes - accessible without authentication */}
         <Route 
           path="/login" 
@@ -121,10 +106,7 @@ const App = () => {
           } 
         />
       </Routes>
-     </div>
-</Router>
-    
-   
+    </div>
   );
 };
 
