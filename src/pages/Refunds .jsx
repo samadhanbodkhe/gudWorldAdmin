@@ -1,5 +1,5 @@
 // src/pages/Refunds.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import {
   FiSearch,
@@ -21,7 +21,11 @@ import {
   FiClock,
 } from "react-icons/fi";
 import { useGetCancelledOrdersQuery } from "../redux/api/ordersApi";
-import { useGetAllRefundsQuery, useGetRefundAnalyticsQuery, useProcessRefundMutation } from "../redux/api/refundApi";
+import { 
+  useGetAllRefundsQuery, 
+  useGetRefundAnalyticsQuery, 
+  useProcessRefundMutation 
+} from "../redux/api/refundApi";
 
 const Refunds = () => {
   // State for filters and modals
@@ -64,29 +68,35 @@ const Refunds = () => {
 
   const { data: refundAnalyticsData } = useGetRefundAnalyticsQuery();
 
-  const [processRefund, { isLoading: processingOrderRefund }] = useProcessRefundMutation();
+  const [processRefund, { 
+    isLoading: processingOrderRefund,
+    isSuccess: refundProcessedSuccess
+  }] = useProcessRefundMutation();
+
+  // Real-time updates when refund is processed
+  useEffect(() => {
+    if (refundProcessedSuccess) {
+      // Refetch both queries to get updated data
+      refetchCancelledOrders();
+      refetchRefunds();
+    }
+  }, [refundProcessedSuccess, refetchCancelledOrders, refetchRefunds]);
 
   // Cancelled orders data
   const cancelledOrders = cancelledOrdersData?.cancelledOrders || [];
   const totalPages = cancelledOrdersData?.pagination?.totalPages || 1;
   const totalItems = cancelledOrdersData?.pagination?.total || 0;
-  const cancelledAnalytics = cancelledOrdersData?.analytics || {};
 
   // Refunds data
   const refunds = refundsData?.refunds || [];
   const refundsTotalPages = refundsData?.pagination?.totalPages || 1;
   const refundsTotalItems = refundsData?.pagination?.total || 0;
-  const refundAnalytics = refundAnalyticsData || {};
 
-  // Combined analytics for dashboard
-  const analytics = {
-    totalCancelled: cancelledAnalytics.totalCancelled || totalItems || 0,
-    pendingRefunds: cancelledAnalytics.pendingRefunds || 0,
-    totalRefunded: refundAnalytics.totalRefunded || 0,
-    refundedThisMonth: refundAnalytics.refundedThisMonth || 0,
-    totalRefundAmount: refundAnalytics.totalRefundAmount || 0,
-    averageRefundAmount: refundAnalytics.averageRefundAmount || 0,
-  };
+  // Filter pending refunds (only orders that haven't been refunded yet)
+  const pendingRefundsOrders = cancelledOrders.filter(order => 
+    order.paymentStatus !== 'REFUNDED' && 
+    order.refundStatus !== 'PROCESSED'
+  );
 
   // Status colors
   const orderStatusColors = {
@@ -96,6 +106,10 @@ const Refunds = () => {
     REFUND_INITIATED: "bg-blue-50 text-blue-800 border border-blue-200",
     REFUND_COMPLETED: "bg-green-50 text-green-800 border border-green-200",
     REFUND_FAILED: "bg-red-50 text-red-800 border border-red-200",
+    PENDING: "bg-orange-50 text-orange-800 border border-orange-200",
+    PROCESSED: "bg-green-50 text-green-800 border border-green-200",
+    FAILED: "bg-red-50 text-red-800 border border-red-200",
+    CANCELLED: "bg-gray-50 text-gray-800 border border-gray-200",
   };
 
   // Handler functions
@@ -106,7 +120,7 @@ const Refunds = () => {
     }
 
     try {
-      await processRefund({
+      const result = await processRefund({
         id: order._id,
         refundAmount: parseFloat(refundAmount),
         refundReason,
@@ -116,22 +130,12 @@ const Refunds = () => {
       setShowRefundModal(false);
       setRefundAmount("");
       setRefundReason("");
-      refetchCancelledOrders();
-      refetchRefunds();
+      
+      // The useEffect will handle the refetching automatically
     } catch (error) {
       console.error('Refund processing error:', error);
       toast.error(error.data?.error || "Failed to process refund");
     }
-  };
-
-  const resetFilters = () => {
-    setSearch("");
-    setPage(1);
-  };
-
-  const resetRefundsFilters = () => {
-    setRefundsSearch("");
-    setRefundsPage(1);
   };
 
   const handleOrderSelect = (order) => {
@@ -340,7 +344,7 @@ const Refunds = () => {
         </div>
         <div className="text-right">
           <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 ${orderStatusColors[refund.status]}`}>
-            {refund.status === 'REFUND_COMPLETED' ? (
+            {refund.status === 'PROCESSED' || refund.status === 'REFUND_COMPLETED' ? (
               <FiCheckCircle className="w-3 h-3" />
             ) : (
               <FiClock className="w-3 h-3" />
@@ -423,7 +427,7 @@ const Refunds = () => {
                   : "text-blue-700 hover:bg-blue-50"
               }`}
             >
-              Pending Refunds
+              Pending Refunds ({pendingRefundsOrders.length})
             </button>
             <button
               onClick={() => setActiveTab("processed")}
@@ -433,61 +437,8 @@ const Refunds = () => {
                   : "text-green-700 hover:bg-green-50"
               }`}
             >
-              Refund History
+              Refund History ({refunds.length})
             </button>
-          </div>
-        </div>
-
-        {/* Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-blue-200 cursor-default">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-600 text-sm font-medium">Total Cancelled</p>
-                <p className="text-2xl font-bold text-blue-900">{analytics.totalCancelled}</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <FiShoppingBag className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-blue-200 cursor-default">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-600 text-sm font-medium">Pending Refunds</p>
-                <p className="text-2xl font-bold text-blue-900">{analytics.pendingRefunds}</p>
-              </div>
-              <div className="p-3 bg-orange-100 rounded-full">
-                <FiDollarSign className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-blue-200 cursor-default">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-600 text-sm font-medium">Total Refunded</p>
-                <p className="text-2xl font-bold text-blue-900">
-                  {formatCurrency(analytics.totalRefundAmount)}
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <FiTrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-blue-200 cursor-default">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-600 text-sm font-medium">This Month</p>
-                <p className="text-2xl font-bold text-blue-900">{analytics.refundedThisMonth}</p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <FiCalendar className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
           </div>
         </div>
 
@@ -514,13 +465,6 @@ const Refunds = () => {
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                   <button
-                    onClick={resetFilters}
-                    className="px-6 py-3 border border-blue-300 text-blue-700 rounded-xl hover:bg-blue-50 transition-all duration-200 font-medium flex items-center gap-2 cursor-pointer"
-                  >
-                    <FiRefreshCw className="w-4 h-4" />
-                    Reset
-                  </button>
-                  <button
                     onClick={refetchCancelledOrders}
                     className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-medium flex items-center gap-2 cursor-pointer"
                   >
@@ -534,7 +478,7 @@ const Refunds = () => {
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-sm text-blue-600 flex items-center gap-2 cursor-default">
                   <FiFilter className="w-4 h-4" />
-                  {totalItems} cancelled orders found
+                  {pendingRefundsOrders.length} pending refunds found
                 </div>
                 <div className="text-sm text-blue-600 cursor-default">
                   Page {page} of {totalPages}
@@ -569,7 +513,7 @@ const Refunds = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
-                    {cancelledOrders.map((order) => (
+                    {pendingRefundsOrders.map((order) => (
                       <tr key={order._id} className="hover:bg-orange-50 transition-colors duration-200">
                         <td className="px-6 py-4 cursor-default">
                           <div>
@@ -653,48 +597,36 @@ const Refunds = () => {
               </div>
 
               {/* No Cancelled Orders State */}
-              {cancelledOrders.length === 0 && (
+              {pendingRefundsOrders.length === 0 && (
                 <div className="text-center py-12 cursor-default">
                   <FiShoppingBag className="mx-auto w-16 h-16 text-orange-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-orange-900 mb-2">No cancelled orders found</h3>
+                  <h3 className="text-lg font-semibold text-orange-900 mb-2">No pending refunds found</h3>
                   <p className="text-orange-600 mb-6">
                     {search 
                       ? `No cancelled orders found with current search` 
-                      : "No cancelled orders pending refund"
+                      : "No pending refunds at the moment"
                     }
                   </p>
-                  <button
-                    onClick={resetFilters}
-                    className="bg-orange-600 text-white px-6 py-2 rounded-xl hover:bg-orange-700 transition-all duration-200 cursor-pointer"
-                  >
-                    Clear Filters
-                  </button>
                 </div>
               )}
             </div>
 
             {/* Mobile Lists for Pending */}
             <div className="lg:hidden space-y-4">
-              {cancelledOrders.map((order) => (
+              {pendingRefundsOrders.map((order) => (
                 <MobileCancelledOrderCard key={order._id} order={order} />
               ))}
               
-              {cancelledOrders.length === 0 && (
+              {pendingRefundsOrders.length === 0 && (
                 <div className="text-center py-12 bg-white rounded-2xl shadow-lg border border-orange-200 cursor-default">
                   <FiShoppingBag className="mx-auto w-16 h-16 text-orange-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-orange-900 mb-2">No cancelled orders found</h3>
+                  <h3 className="text-lg font-semibold text-orange-900 mb-2">No pending refunds found</h3>
                   <p className="text-orange-600 mb-6">
                     {search 
                       ? `No cancelled orders found with current search` 
-                      : "No cancelled orders pending refund"
+                      : "No pending refunds at the moment"
                     }
                   </p>
-                  <button
-                    onClick={resetFilters}
-                    className="bg-orange-600 text-white px-6 py-2 rounded-xl hover:bg-orange-700 transition-all duration-200 cursor-pointer"
-                  >
-                    Clear Filters
-                  </button>
                 </div>
               )}
             </div>
@@ -704,7 +636,7 @@ const Refunds = () => {
               <div className="bg-white rounded-2xl shadow-lg border border-blue-200 p-6">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                   <div className="text-sm text-blue-600 cursor-default">
-                    Showing page {page} of {totalPages} • {totalItems} total cancelled orders
+                    Showing page {page} of {totalPages} • {pendingRefundsOrders.length} pending refunds
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -753,13 +685,6 @@ const Refunds = () => {
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                   <button
-                    onClick={resetRefundsFilters}
-                    className="px-6 py-3 border border-green-300 text-green-700 rounded-xl hover:bg-green-50 transition-all duration-200 font-medium flex items-center gap-2 cursor-pointer"
-                  >
-                    <FiRefreshCw className="w-4 h-4" />
-                    Reset
-                  </button>
-                  <button
                     onClick={refetchRefunds}
                     className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 font-medium flex items-center gap-2 cursor-pointer"
                   >
@@ -773,7 +698,7 @@ const Refunds = () => {
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-sm text-green-600 flex items-center gap-2 cursor-default">
                   <FiFilter className="w-4 h-4" />
-                  {refundsTotalItems} refunds found
+                  {refunds.length} refunds found
                 </div>
                 <div className="text-sm text-green-600 cursor-default">
                   Page {refundsPage} of {refundsTotalPages}
@@ -847,7 +772,7 @@ const Refunds = () => {
                         </td>
                         <td className="px-6 py-4 cursor-default">
                           <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1 w-fit ${orderStatusColors[refund.status]}`}>
-                            {refund.status === 'REFUND_COMPLETED' ? (
+                            {refund.status === 'PROCESSED' || refund.status === 'REFUND_COMPLETED' ? (
                               <FiCheckCircle className="w-3 h-3" />
                             ) : (
                               <FiClock className="w-3 h-3" />
@@ -894,12 +819,6 @@ const Refunds = () => {
                       : "No refunds have been processed yet"
                     }
                   </p>
-                  <button
-                    onClick={resetRefundsFilters}
-                    className="bg-green-600 text-white px-6 py-2 rounded-xl hover:bg-green-700 transition-all duration-200 cursor-pointer"
-                  >
-                    Clear Filters
-                  </button>
                 </div>
               )}
             </div>
@@ -920,12 +839,6 @@ const Refunds = () => {
                       : "No refunds have been processed yet"
                     }
                   </p>
-                  <button
-                    onClick={resetRefundsFilters}
-                    className="bg-green-600 text-white px-6 py-2 rounded-xl hover:bg-green-700 transition-all duration-200 cursor-pointer"
-                  >
-                    Clear Filters
-                  </button>
                 </div>
               )}
             </div>
@@ -1201,37 +1114,6 @@ const Refunds = () => {
                     </div>
                   </div>
 
-                  {/* Order Items */}
-                  <div className="bg-orange-50 rounded-2xl p-6 cursor-default">
-                    <h3 className="text-lg font-semibold text-orange-900 mb-4">Order Items</h3>
-                    <div className="space-y-3">
-                      {selectedOrder.items?.map((item, index) => (
-                        <div key={index} className="bg-white p-4 rounded-xl border border-orange-200">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-semibold text-orange-900">{item.product?.name || 'Product'}</h4>
-                              <p className="text-orange-600 text-sm">Quantity: {item.quantity}</p>
-                              {item.variant && (
-                                <p className="text-orange-500 text-sm">Variant: {item.variant}</p>
-                              )}
-                              {item.product?.sku && (
-                                <p className="text-orange-500 text-sm">SKU: {item.product.sku}</p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-orange-900">
-                                {formatCurrency((item.price || 0) * (item.quantity || 1))}
-                              </p>
-                              <p className="text-orange-600 text-sm">
-                                {formatCurrency(item.price || 0)} each
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Action Button */}
                   <div className="text-center pt-6">
                     <button
@@ -1285,7 +1167,7 @@ const Refunds = () => {
                       <div>
                         <label className="block text-sm font-medium text-green-700 mb-1">Status</label>
                         <span className={`inline-block px-3 py-1 text-sm rounded-full font-medium ${orderStatusColors[selectedRefund.status]}`}>
-                          {selectedRefund.status === 'REFUND_COMPLETED' ? (
+                          {selectedRefund.status === 'PROCESSED' || selectedRefund.status === 'REFUND_COMPLETED' ? (
                             <FiCheckCircle className="w-3 h-3 mr-1" />
                           ) : (
                             <FiClock className="w-3 h-3 mr-1" />
