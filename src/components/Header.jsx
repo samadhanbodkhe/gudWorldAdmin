@@ -33,15 +33,6 @@ const Header = ({ setIsAuthenticated }) => {
       <h1 className="text-xl font-semibold text-[#5C3A21]">
         Admin Dashboard
       </h1>
-
-      <button
-        onClick={handleLogout}
-        disabled={isLoading}
-        className="flex items-center gap-2 bg-[#B97A57] text-white px-3 py-1.5 rounded-md hover:bg-[#9C623E] transition-colors text-sm disabled:opacity-70 disabled:cursor-not-allowed"
-      >
-        <FiLogOut />
-        {isLoading ? "Logging out..." : "Logout"}
-      </button>
     </header>
   );
 };

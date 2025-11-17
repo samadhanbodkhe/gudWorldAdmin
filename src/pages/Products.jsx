@@ -1,5 +1,5 @@
 // src/pages/Products.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   useGetProductsQuery, 
   useDeleteProductMutation,
@@ -23,8 +23,182 @@ import {
   FiPlusCircle,
   FiMinusCircle,
   FiClock,
-  FiPercent
+  FiPercent,
+  FiFilter,
+  FiEye,
+  FiRefreshCw
 } from "react-icons/fi";
+
+// Product Card Component for Mobile
+const ProductCard = ({ product, onEdit, onStockAdjust, onDelete }) => {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center space-x-3">
+          {product.images && product.images.length > 0 ? (
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="w-12 h-12 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <FiPackage className="w-6 h-6 text-gray-400" />
+            </div>
+          )}
+          <div>
+            <h3 className="font-semibold text-gray-900 text-sm">{product.name}</h3>
+            <span className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 mt-1">
+              {product.category}
+            </span>
+          </div>
+        </div>
+        <span
+          className={`px-2 py-1 text-xs rounded-full ${
+            product.isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {product.isActive ? "Active" : "Inactive"}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <p className="text-xs text-gray-500">Stock</p>
+          <p className="text-sm font-semibold">
+            {product.availableStock} {product.unit}
+            {product.isLowStock && (
+              <span className="text-orange-600 text-xs ml-1 flex items-center">
+                <FiAlertTriangle className="w-3 h-3 mr-1" />
+                Low
+              </span>
+            )}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">Price</p>
+          <p className="text-sm font-semibold">
+            ₹{product.priceWithGst || (product.unitPrice + (product.unitPrice * (product.gstRate || 0)) / 100).toFixed(2)}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-between space-x-2">
+        <button
+          onClick={() => onEdit(product)}
+          className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center"
+        >
+          <FiEdit className="w-3 h-3 mr-1" />
+          Edit
+        </button>
+        <button
+          onClick={() => onStockAdjust(product)}
+          className="flex-1 bg-green-50 text-green-600 hover:bg-green-100 py-2 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center"
+        >
+          <FiPlusCircle className="w-3 h-3 mr-1" />
+          Stock
+        </button>
+        <button
+          onClick={() => onDelete(product)}
+          className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center"
+        >
+          <FiTrash2 className="w-3 h-3 mr-1" />
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Mobile Filters Component
+const MobileFilters = ({ 
+  search, 
+  setSearch, 
+  category, 
+  setCategory, 
+  lowStock, 
+  setLowStock, 
+  onReset,
+  isOpen,
+  onClose 
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+          <button onClick={onClose} className="text-gray-500">
+            <FiX className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+            >
+              <option value="">All Categories</option>
+              <option value="Khandeshi">Khandeshi</option>
+              <option value="Organic">Organic</option>
+              <option value="Traditional">Traditional</option>
+              <option value="Jaggery">Jaggery</option>
+              <option value="Premium">Premium</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Stock Status</label>
+            <select
+              value={lowStock}
+              onChange={(e) => setLowStock(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+            >
+              <option value="">All Stock</option>
+              <option value="true">Low Stock Only</option>
+            </select>
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <button
+              onClick={onReset}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Reset
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-[#B97A57] text-white rounded-lg hover:bg-[#A86A47] transition-colors"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Products = () => {
   // State for main products list
@@ -32,6 +206,7 @@ const Products = () => {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [lowStock, setLowStock] = useState("");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // State for modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -85,6 +260,11 @@ const Products = () => {
   // Products data
   const products = data?.products || [];
   const totalPages = data?.totalPages || 1;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, category, lowStock]);
 
   // Calculate price with GST for display
   const calculatePriceWithGst = (unitPrice, gstRate) => {
@@ -267,58 +447,76 @@ const Products = () => {
     setCategory("");
     setLowStock("");
     setPage(1);
+    setShowMobileFilters(false);
   };
 
   // Loading and error states
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#B97A57]"></div>
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#B97A57]"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-red-500 text-lg">Error loading products</div>
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Error loading products</h3>
+          <p className="text-gray-600 mb-4">
+            {error?.data?.message || "Please try again later"}
+          </p>
+          <button 
+            onClick={refetch}
+            className="bg-[#B97A57] text-white px-6 py-2 rounded-lg hover:bg-[#A86A47] transition-colors flex items-center"
+          >
+            <FiRefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-[#5C3A21]">Products Management</h1>
-          <p className="text-gray-600 mt-2">Manage your inventory and products</p>
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-2xl lg:text-3xl font-bold text-[#5C3A21]">Products Management</h1>
+            <p className="text-gray-600 mt-2">Manage your inventory and products</p>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-[#B97A57] hover:bg-[#A86A47] text-white px-4 lg:px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors shadow-md w-full sm:w-auto"
+          >
+            <FiPlus className="w-5 h-5" />
+            <span>Add Product</span>
+          </button>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-[#B97A57] hover:bg-[#A86A47] text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors shadow-md"
-        >
-          <FiPlus className="w-5 h-5" />
-          <span>Add Product</span>
-        </button>
       </div>
 
       {/* Low Stock Alerts */}
       {lowStockData?.lowStockProducts && lowStockData.lowStockProducts.length > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
           <div className="flex items-center space-x-2 mb-3">
             <FiAlertTriangle className="w-5 h-5 text-orange-600" />
             <h3 className="text-lg font-semibold text-orange-800">Low Stock Alerts</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="flex overflow-x-auto space-x-3 pb-2 -mx-1 px-1">
             {lowStockData.lowStockProducts.slice(0, 5).map((product) => (
-              <div key={product._id} className="bg-white p-3 rounded border border-orange-200">
-                <p className="font-medium text-sm text-gray-900">{product.name}</p>
-                <p className="text-xs text-orange-600">
+              <div key={product._id} className="bg-white p-3 rounded border border-orange-200 min-w-[200px] flex-shrink-0">
+                <p className="font-medium text-sm text-gray-900 truncate">{product.name}</p>
+                <p className="text-xs text-orange-600 mt-1">
                   Stock: {product.availableStock} {product.unit}
                 </p>
                 <p className="text-xs text-gray-500">
-                  Needed: {product.needed} {product.unit}
+                  Min: {product.minStockLevel} {product.unit}
                 </p>
               </div>
             ))}
@@ -326,10 +524,9 @@ const Products = () => {
         </div>
       )}
 
-      {/* Filters and Search */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      {/* Desktop Filters */}
+      <div className="hidden lg:block bg-white rounded-lg shadow-sm border p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Search */}
           <div className="relative">
             <FiSearch className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
             <input
@@ -341,7 +538,6 @@ const Products = () => {
             />
           </div>
 
-          {/* Category Filter */}
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -356,7 +552,6 @@ const Products = () => {
             <option value="Other">Other</option>
           </select>
 
-          {/* Low Stock Filter */}
           <select
             value={lowStock}
             onChange={(e) => setLowStock(e.target.value)}
@@ -366,7 +561,6 @@ const Products = () => {
             <option value="true">Low Stock Only</option>
           </select>
 
-          {/* Reset Filters */}
           <button
             onClick={resetFilters}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -376,9 +570,31 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Products Table */}
+      {/* Mobile Filter Button */}
+      <div className="lg:hidden mb-4">
+        <button
+          onClick={() => setShowMobileFilters(true)}
+          className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 flex items-center justify-center space-x-2 text-gray-700 hover:bg-gray-50"
+        >
+          <FiFilter className="w-4 h-4" />
+          <span>Filters</span>
+        </button>
+      </div>
+
+      {/* Products Count */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-600">
+          Showing {products.length} product{products.length !== 1 ? 's' : ''}
+          {search && ` for "${search}"`}
+          {category && ` in ${category}`}
+          {lowStock && ` (Low Stock)`}
+        </p>
+      </div>
+
+      {/* Products Grid/Table */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -441,16 +657,16 @@ const Products = () => {
                       </div>
                     )}
                   </td>
-                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-  <div>
-    <div className="font-semibold">
-      ₹{product.priceWithGst || (product.unitPrice + (product.unitPrice * (product.gstRate || 0)) / 100).toFixed(2)}
-    </div>
-    <div className="text-xs text-gray-500">
-      incl. {product.gstRate}% GST
-    </div>
-  </div>
-</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div>
+                      <div className="font-semibold">
+                        ₹{product.priceWithGst || (product.unitPrice + (product.unitPrice * (product.gstRate || 0)) / 100).toFixed(2)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        incl. {product.gstRate}% GST
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
@@ -466,19 +682,21 @@ const Products = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleEdit(product)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors"
+                        className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded hover:bg-blue-50"
+                        title="Edit"
                       >
                         <FiEdit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleStockAdjust(product)}
-                        className="text-green-600 hover:text-green-900 transition-colors text-sm"
+                        className="text-green-600 hover:text-green-900 transition-colors p-1 rounded hover:bg-green-50 text-xs px-2"
                       >
                         Stock
                       </button>
                       <button
                         onClick={() => handleDelete(product)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
+                        className="text-red-600 hover:text-red-900 transition-colors p-1 rounded hover:bg-red-50"
+                        title="Delete"
                       >
                         <FiTrash2 className="w-4 h-4" />
                       </button>
@@ -490,33 +708,20 @@ const Products = () => {
           </table>
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-700">
-                Showing page {page} of {totalPages}
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Mobile Cards */}
+        <div className="lg:hidden">
+          {products.map((product) => (
+            <ProductCard
+              key={product._id}
+              product={product}
+              onEdit={handleEdit}
+              onStockAdjust={handleStockAdjust}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
 
+        {/* Empty State */}
         {products.length === 0 && (
           <div className="text-center py-12">
             <FiPackage className="mx-auto w-12 h-12 text-gray-400" />
@@ -524,6 +729,39 @@ const Products = () => {
             <p className="mt-2 text-gray-500">
               Get started by creating your first product.
             </p>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="mt-4 bg-[#B97A57] hover:bg-[#A86A47] text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Add Product
+            </button>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-4 lg:px-6 py-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+              <div className="text-sm text-gray-700">
+                Page {page} of {totalPages}
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -531,10 +769,10 @@ const Products = () => {
       {/* Add/Edit Product Modal */}
       {(showAddModal || showEditModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 lg:p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-[#5C3A21]">
+                <h2 className="text-xl lg:text-2xl font-bold text-[#5C3A21]">
                   {showEditModal ? "Edit Product" : "Add New Product"}
                 </h2>
                 <button
@@ -558,7 +796,7 @@ const Products = () => {
                     setImages([]);
                     setImagePreviews([]);
                   }}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
                 >
                   <FiX className="w-6 h-6" />
                 </button>
@@ -566,172 +804,175 @@ const Products = () => {
 
               <form onSubmit={handleProductSubmit} className="space-y-6">
                 {/* Basic Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Product Name *
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={productForm.name}
-                        onChange={handleProductInputChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
-                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div className="lg:col-span-2">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Product Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={productForm.name}
+                      onChange={handleProductInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    />
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
-                      </label>
-                      <select
-                        name="category"
-                        value={productForm.category}
-                        onChange={handleProductInputChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      >
-                        <option value="Khandeshi">Khandeshi</option>
-                        <option value="Organic">Organic</option>
-                        <option value="Traditional">Traditional</option>
-                        <option value="Jaggery">Jaggery</option>
-                        <option value="Premium">Premium</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category *
+                    </label>
+                    <select
+                      name="category"
+                      value={productForm.category}
+                      onChange={handleProductInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    >
+                      <option value="Khandeshi">Khandeshi</option>
+                      <option value="Organic">Organic</option>
+                      <option value="Traditional">Traditional</option>
+                      <option value="Jaggery">Jaggery</option>
+                      <option value="Premium">Premium</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Unit *
-                      </label>
-                      <select
-                        name="unit"
-                        value={productForm.unit}
-                        onChange={handleProductInputChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      >
-                        <option value="kg">Kilogram (kg)</option>
-                        <option value="g">Gram (g)</option>
-                        <option value="piece">Piece</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Unit *
+                    </label>
+                    <select
+                      name="unit"
+                      value={productForm.unit}
+                      onChange={handleProductInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    >
+                      <option value="kg">Kilogram (kg)</option>
+                      <option value="g">Gram (g)</option>
+                      <option value="piece">Piece</option>
+                    </select>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        GST Rate (%) *
-                      </label>
-                      <input
-                        type="number"
-                        name="gstRate"
-                        value={productForm.gstRate}
-                        onChange={handleProductInputChange}
-                        required
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      GST Rate (%) *
+                    </label>
+                    <input
+                      type="number"
+                      name="gstRate"
+                      value={productForm.gstRate}
+                      onChange={handleProductInputChange}
+                      required
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    />
                   </div>
                 </div>
 
                 {/* Pricing & Stock */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing & Stock</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Unit Price (₹) *
-                      </label>
-                      <input
-                        type="number"
-                        name="unitPrice"
-                        value={productForm.unitPrice}
-                        onChange={handleProductInputChange}
-                        required
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
-                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div className="lg:col-span-2">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Pricing & Stock</h3>
+                  </div>
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Final Price (with GST)
-                      </label>
-                      <div className="text-lg font-semibold text-[#B97A57]">
-                        ₹{calculatePriceWithGst(productForm.unitPrice, productForm.gstRate)}
-                      </div>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Unit Price (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      name="unitPrice"
+                      value={productForm.unitPrice}
+                      onChange={handleProductInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    />
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Initial Stock *
-                      </label>
-                      <input
-                        type="number"
-                        name="initialStock"
-                        value={productForm.initialStock}
-                        onChange={handleProductInputChange}
-                        required
-                        min="0"
-                        step="0.001"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Final Price (with GST)
+                    </label>
+                    <div className="text-lg font-semibold text-[#B97A57]">
+                      ₹{calculatePriceWithGst(productForm.unitPrice, productForm.gstRate)}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Minimum Stock Level
-                      </label>
-                      <input
-                        type="number"
-                        name="minStockLevel"
-                        value={productForm.minStockLevel}
-                        onChange={handleProductInputChange}
-                        min="0"
-                        step="1"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Initial Stock *
+                    </label>
+                    <input
+                      type="number"
+                      name="initialStock"
+                      value={productForm.initialStock}
+                      onChange={handleProductInputChange}
+                      required
+                      min="0"
+                      step="0.001"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Stock Level
+                    </label>
+                    <input
+                      type="number"
+                      name="minStockLevel"
+                      value={productForm.minStockLevel}
+                      onChange={handleProductInputChange}
+                      min="0"
+                      step="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    />
                   </div>
                 </div>
 
                 {/* Dates */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Production & Expiry</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Production Date *
-                      </label>
-                      <input
-                        type="date"
-                        name="productionDate"
-                        value={productForm.productionDate}
-                        onChange={handleProductInputChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
-                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div className="lg:col-span-2">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Production & Expiry</h3>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Expiry Date *
-                      </label>
-                      <input
-                        type="date"
-                        name="expiryDate"
-                        value={productForm.expiryDate}
-                        onChange={handleProductInputChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Production Date *
+                    </label>
+                    <input
+                      type="date"
+                      name="productionDate"
+                      value={productForm.productionDate}
+                      onChange={handleProductInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expiry Date *
+                    </label>
+                    <input
+                      type="date"
+                      name="expiryDate"
+                      value={productForm.expiryDate}
+                      onChange={handleProductInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
+                    />
                   </div>
                 </div>
 
@@ -781,13 +1022,13 @@ const Products = () => {
                         multiple
                         accept="image/*"
                         onChange={handleImageChange}
-                        className="mt-4 mx-auto"
+                        className="mt-4 mx-auto block"
                       />
                     </div>
 
                     {/* Image Previews */}
                     {imagePreviews.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         {imagePreviews.map((preview, index) => (
                           <div key={index} className="relative">
                             <img
@@ -798,7 +1039,7 @@ const Products = () => {
                             <button
                               type="button"
                               onClick={() => removeImage(index)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                             >
                               <FiX className="w-3 h-3" />
                             </button>
@@ -810,7 +1051,7 @@ const Products = () => {
                 </div>
 
                 {/* Submit Buttons */}
-                <div className="flex justify-end space-x-4 pt-6 border-t">
+                <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 border-t">
                   <button
                     type="button"
                     onClick={() => {
@@ -818,14 +1059,14 @@ const Products = () => {
                       setShowEditModal(false);
                       setSelectedProduct(null);
                     }}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors order-2 sm:order-1"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={creating || updating}
-                    className="bg-[#B97A57] hover:bg-[#A86A47] text-white px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-[#B97A57] hover:bg-[#A86A47] text-white px-6 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2 mb-3 sm:mb-0"
                   >
                     <FiSave className="w-4 h-4" />
                     <span>
@@ -847,13 +1088,13 @@ const Products = () => {
       {/* Adjust Stock Modal */}
       {showStockModal && selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full">
-            <div className="p-6">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 lg:p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-[#5C3A21]">Adjust Stock</h2>
+                <h2 className="text-xl lg:text-2xl font-bold text-[#5C3A21]">Adjust Stock</h2>
                 <button
                   onClick={() => setShowStockModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
                 >
                   <FiX className="w-6 h-6" />
                 </button>
@@ -867,7 +1108,7 @@ const Products = () => {
                     <div className="space-y-3">
                       <div>
                         <label className="text-sm font-medium text-gray-500">Name</label>
-                        <p className="text-gray-900">{selectedProduct.name}</p>
+                        <p className="text-gray-900 font-medium">{selectedProduct.name}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Current Stock</label>
@@ -885,8 +1126,9 @@ const Products = () => {
                       </div>
                       {selectedProduct.isLowStock && (
                         <div className="bg-orange-50 border border-orange-200 rounded p-3">
-                          <p className="text-sm text-orange-800">
-                            ⚠️ Low stock alert! Minimum level: {selectedProduct.minStockLevel} {selectedProduct.unit}
+                          <p className="text-sm text-orange-800 flex items-center">
+                            <FiAlertTriangle className="w-4 h-4 mr-2" />
+                            Low stock! Minimum: {selectedProduct.minStockLevel} {selectedProduct.unit}
                           </p>
                         </div>
                       )}
@@ -958,18 +1200,18 @@ const Products = () => {
                       />
                     </div>
 
-                    <div className="flex justify-end space-x-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4">
                       <button
                         type="button"
                         onClick={() => setShowStockModal(false)}
-                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors order-2 sm:order-1"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={adjusting}
-                        className="bg-[#B97A57] hover:bg-[#A86A47] text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-[#B97A57] hover:bg-[#A86A47] text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
                       >
                         {adjusting ? "Adjusting..." : "Adjust Stock"}
                       </button>
@@ -1019,6 +1261,19 @@ const Products = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile Filters Modal */}
+      <MobileFilters
+        search={search}
+        setSearch={setSearch}
+        category={category}
+        setCategory={setCategory}
+        lowStock={lowStock}
+        setLowStock={setLowStock}
+        onReset={resetFilters}
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+      />
     </div>
   );
 };
