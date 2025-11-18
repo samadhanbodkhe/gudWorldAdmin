@@ -20,7 +20,46 @@ const App = () => {
   useAuthInterceptor()
   const [isLoading, setIsLoading] = useState(true);
   const { adminToken } = useSelector(state => state.auth);
+   const dispatch = useDispatch(); 
   const location = useLocation();
+
+
+   useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        // Rehydrate auth state from localStorage
+        dispatch(rehydrateAuth());
+        
+        // Validate and update auth state
+        dispatch(validateAndUpdateAuth());
+
+        // Simulate loading for better UX
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 1000);
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, [dispatch]);
+
+
+   useEffect(() => {
+    const interval = setInterval(() => {
+      dispatch(validateAndUpdateAuth());
+    }, 30000); // Validate every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
 
   // Check authentication status on app load
   useEffect(() => {
@@ -49,11 +88,11 @@ const App = () => {
 
     <div className="App">
       <Routes>
-        {/* Public routes - accessible without authentication */}
+       
         <Route 
           path="/login" 
           element={
-            adminToken ? <Navigate to="/admin/dashboard" replace /> : <Login />
+            isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <Login />
           } 
         />
         <Route 

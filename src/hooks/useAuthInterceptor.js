@@ -1,6 +1,8 @@
 // src/hooks/useAuthInterceptor.js
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { clearAuth } from '../redux/slice/authSlice'; // for admin
+// import { invalidateToken } from '../redux/slice/userAuthSlice'; // for user
 
 export const useAuthInterceptor = () => {
   const dispatch = useDispatch();
@@ -22,12 +24,18 @@ export const useAuthInterceptor = () => {
         
         // Check for 401 responses
         if (response.status === 401) {
-          // Check if it's admin or user route
+          console.log('🛑 401 Unauthorized - Clearing auth');
+          
           if (url.includes('/admin/')) {
-            localStorage.removeItem('adminToken');
-            localStorage.removeItem('admin');
-            window.location.href = '/login';
+            // Use Redux action instead of direct localStorage manipulation
+            dispatch(clearAuth());
+            // Optional: Redirect after state is cleared
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 100);
           } else {
+            // For user panel
+            // dispatch(invalidateToken());
             localStorage.removeItem('token');
             localStorage.removeItem('userAuth');
             window.location.href = '/login';
