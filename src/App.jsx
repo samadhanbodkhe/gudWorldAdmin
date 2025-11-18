@@ -14,8 +14,10 @@ import Profile from "./pages/Profile";
 import VerifyOtp from "./pages/VerifyOtp ";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import Refunds from "./pages/Refunds ";
+import { useAuthInterceptor } from "./hooks/useAuthInterceptor";
 
 const App = () => {
+  useAuthInterceptor()
   const [isLoading, setIsLoading] = useState(true);
   const { adminToken } = useSelector(state => state.auth);
   const location = useLocation();
@@ -43,6 +45,8 @@ const App = () => {
   }
 
   return (
+    
+
     <div className="App">
       <Routes>
         {/* Public routes - accessible without authentication */}
