@@ -14,6 +14,19 @@ export const authApi = createApi({
             return headers;
         },
     }),
+    fetchFn: async (input, init) => {
+  const response = await fetch(input, init);
+  
+  if (response.status === 401) {
+    // Auto logout on 401
+    localStorage.removeItem("admin");
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminEmail");
+    window.location.href = '/login';
+  }
+  
+  return response;
+},
     tagTypes: ["Admin"],
     endpoints: (builder) => ({
         loginAdmin: builder.mutation({
@@ -47,64 +60,70 @@ export const authApi = createApi({
                 method: "POST",
             }),
             invalidatesTags: ["Admin"],
-        }),
-
-        getAdminProfile: builder.query({
-            query: () => ({
-                url: "/getAdminProfile",
-                method: "GET",
-            }),
-            providesTags: ["Admin"],
-        }),
-
-        verifyAdminToken: builder.query({
-            query: () => ({
-                url: "/verifyToken",
-                method: "GET",
-            }),
-            providesTags: ["Admin"],
-        }),
-
-        // Updated mutations with correct endpoints
-        updateAdminProfile: builder.mutation({
-            query: (profileData) => ({
-                url: "/updateAdminProfile",
-                method: "PUT",
-                body: profileData,
-            }),
-            invalidatesTags: ["Admin"],
-        }),
-
-        uploadAdminPhoto: builder.mutation({
-            query: (file) => {
-                const formData = new FormData();
-                formData.append("photo", file);
-                return {
-                    url: "/uploadPhoto",
-                    method: "POST",
-                    body: formData,
-                };
+            transformResponse: (response) => {
+                localStorage.removeItem("admin");
+                localStorage.removeItem("adminToken");
+                localStorage.removeItem("adminEmail");
+                return response;
             },
-            invalidatesTags: ["Admin"],
-        }),
-
-        removeAdminPhoto: builder.mutation({
-            query: () => ({
-                url: "/removePhoto",
-                method: "DELETE",
-            }),
-            invalidatesTags: ["Admin"],
-        }),
-
-        updateAdminPreferences: builder.mutation({
-            query: (preferences) => ({
-                url: "/updatePreferences", // This matches the backend route now
-                method: "PUT",
-                body: preferences,
-            }),
-            invalidatesTags: ["Admin"],
-        }),
     }),
+
+    getAdminProfile: builder.query({
+        query: () => ({
+            url: "/getAdminProfile",
+            method: "GET",
+        }),
+        providesTags: ["Admin"],
+    }),
+
+    verifyAdminToken: builder.query({
+        query: () => ({
+            url: "/verifyToken",
+            method: "GET",
+        }),
+        providesTags: ["Admin"],
+    }),
+
+    // Updated mutations with correct endpoints
+    updateAdminProfile: builder.mutation({
+        query: (profileData) => ({
+            url: "/updateAdminProfile",
+            method: "PUT",
+            body: profileData,
+        }),
+        invalidatesTags: ["Admin"],
+    }),
+
+    uploadAdminPhoto: builder.mutation({
+        query: (file) => {
+            const formData = new FormData();
+            formData.append("photo", file);
+            return {
+                url: "/uploadPhoto",
+                method: "POST",
+                body: formData,
+            };
+        },
+        invalidatesTags: ["Admin"],
+    }),
+
+    removeAdminPhoto: builder.mutation({
+        query: () => ({
+            url: "/removePhoto",
+            method: "DELETE",
+        }),
+        invalidatesTags: ["Admin"],
+    }),
+
+    updateAdminPreferences: builder.mutation({
+        query: (preferences) => ({
+            url: "/updatePreferences", // This matches the backend route now
+            method: "PUT",
+            body: preferences,
+        }),
+        invalidatesTags: ["Admin"],
+    }),
+}),
 });
 
 export const {
