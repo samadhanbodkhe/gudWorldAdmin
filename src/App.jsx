@@ -15,6 +15,7 @@ import VerifyOtp from "./pages/VerifyOtp ";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import Refunds from "./pages/Refunds ";
 import { useAuthInterceptor } from "./hooks/useAuthInterceptor";
+import { useDispatch } from "react-redux";
 
 const App = () => {
   useAuthInterceptor()
