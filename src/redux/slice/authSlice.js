@@ -1,7 +1,8 @@
 // src/redux/slice/authSlice.js
 import { createSlice } from "@reduxjs/toolkit";
+import { authApi } from "../api/authApi";
 
-// ✅ SIMPLIFIED: Safe token validation
+// ✅ Safe token validation
 const checkTokenValidity = () => {
   const token = localStorage.getItem("adminToken");
   return !!(token && token !== "undefined" && token !== "null");
@@ -66,10 +67,14 @@ const authSlice = createSlice({
         state.adminToken = token;
         state.admin = admin;
         state.isAuthenticated = true;
+      } else {
+        state.adminToken = null;
+        state.admin = null;
+        state.isAuthenticated = false;
       }
     },
   },
-  // ... keep your existing extraReducers
+  // ... your existing extraReducers
 });
 
 export const { 
@@ -77,6 +82,6 @@ export const {
   setAuth, 
   setLoading, 
   rehydrateAuth,
-  validateAndUpdateAuth // ✅ ADD THIS
+  validateAndUpdateAuth 
 } = authSlice.actions;
 export default authSlice.reducer;

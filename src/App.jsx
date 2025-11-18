@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
@@ -15,19 +15,22 @@ import VerifyOtp from "./pages/VerifyOtp ";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import Refunds from "./pages/Refunds ";
 import { useAuthInterceptor } from "./hooks/useAuthInterceptor";
-import { useDispatch } from "react-redux";
+import { rehydrateAuth, validateAndUpdateAuth } from "./redux/slice/authSlice";
 
 const App = () => {
-  useAuthInterceptor()
+  // ✅ ALL HOOKS AT TOP LEVEL
+  useAuthInterceptor();
   const [isLoading, setIsLoading] = useState(true);
-  const { adminToken } = useSelector(state => state.auth);
-   const dispatch = useDispatch(); 
+  const { adminToken, isAuthenticated } = useSelector(state => state.auth);
+  const dispatch = useDispatch(); 
   const location = useLocation();
 
-
-   useEffect(() => {
+  // ✅ SINGLE AUTH INITIALIZATION EFFECT
+  useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('🔄 Initializing admin auth...');
+        
         // Rehydrate auth state from localStorage
         dispatch(rehydrateAuth());
         
@@ -37,6 +40,7 @@ const App = () => {
         // Simulate loading for better UX
         setTimeout(() => {
           setIsLoading(false);
+          console.log('✅ Auth initialization complete');
         }, 1000);
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -47,8 +51,8 @@ const App = () => {
     initializeAuth();
   }, [dispatch]);
 
-
-   useEffect(() => {
+  // ✅ PERIODIC AUTH VALIDATION
+  useEffect(() => {
     const interval = setInterval(() => {
       dispatch(validateAndUpdateAuth());
     }, 30000); // Validate every 30 seconds
@@ -56,40 +60,15 @@ const App = () => {
     return () => clearInterval(interval);
   }, [dispatch]);
 
-  // Show loading spinner while checking authentication
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-
-  // Check authentication status on app load
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Simulate loading for better UX
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 1000);
-      } catch (error) {
-        console.error("Auth check error:", error);
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [adminToken]);
-
-  // Show loading spinner while checking authentication
+  // ✅ CONDITIONAL RETURN AFTER ALL HOOKS
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
   return (
-    
-
     <div className="App">
       <Routes>
-       
+        {/* Public routes */}
         <Route 
           path="/login" 
           element={
@@ -99,7 +78,7 @@ const App = () => {
         <Route 
           path="/verify-otp" 
           element={
-            adminToken ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
+            isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
           } 
         />
         
@@ -133,7 +112,7 @@ const App = () => {
           path="/" 
           element={
             <Navigate 
-              to={adminToken ? "/admin/dashboard" : "/login"} 
+              to={isAuthenticated ? "/admin/dashboard" : "/login"} 
               replace 
             />
           } 
@@ -144,7 +123,7 @@ const App = () => {
           path="*" 
           element={
             <Navigate 
-              to={adminToken ? "/admin/dashboard" : "/login"} 
+              to={isAuthenticated ? "/admin/dashboard" : "/login"} 
               replace 
             />
           } 

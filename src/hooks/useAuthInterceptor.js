@@ -1,8 +1,7 @@
 // src/hooks/useAuthInterceptor.js
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { clearAuth } from '../redux/slice/authSlice'; // for admin
-// import { invalidateToken } from '../redux/slice/userAuthSlice'; // for user
+import { clearAuth } from '../redux/slice/authSlice';
 
 export const useAuthInterceptor = () => {
   const dispatch = useDispatch();
@@ -11,8 +10,19 @@ export const useAuthInterceptor = () => {
     const originalFetch = window.fetch;
     
     window.fetch = async (...args) => {
-      const [url, options = {}] = args;
+      let urlString = '';
       
+      // ✅ SAFELY extract URL from different parameter types
+      if (typeof args[0] === 'string') {
+        urlString = args[0];
+      } else if (args[0] instanceof Request) {
+        urlString = args[0].url;
+      } else {
+        urlString = String(args[0]);
+      }
+      
+      const options = args[1] || {};
+
       // Add credentials to all requests
       const modifiedOptions = {
         ...options,
@@ -20,13 +30,14 @@ export const useAuthInterceptor = () => {
       };
 
       try {
-        const response = await originalFetch(url, modifiedOptions);
+        const response = await originalFetch(args[0], modifiedOptions);
         
         // Check for 401 responses
         if (response.status === 401) {
           console.log('🛑 401 Unauthorized - Clearing auth');
           
-          if (url.includes('/admin/')) {
+          // ✅ SAFELY check if it's admin route
+          if (urlString.includes('/admin/') || urlString.includes('/api/v1/admin') || urlString.includes('/api/v1/dashboard')) {
             // Use Redux action instead of direct localStorage manipulation
             dispatch(clearAuth());
             // Optional: Redirect after state is cleared
@@ -35,7 +46,6 @@ export const useAuthInterceptor = () => {
             }, 100);
           } else {
             // For user panel
-            // dispatch(invalidateToken());
             localStorage.removeItem('token');
             localStorage.removeItem('userAuth');
             window.location.href = '/login';
