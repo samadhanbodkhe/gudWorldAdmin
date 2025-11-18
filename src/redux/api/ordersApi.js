@@ -7,9 +7,9 @@ export const ordersApi = createApi({
     baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/booking`,
     credentials: "include",
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("adminToken");
       if (token) {
-        headers.set("authorization", `Bearer ${token}`);
+        headers.set("Authorization", `Bearer ${token}`);
       }
       return headers;
     },
