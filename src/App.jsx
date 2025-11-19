@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
@@ -14,53 +14,30 @@ import Profile from "./pages/Profile";
 import VerifyOtp from "./pages/VerifyOtp ";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import Refunds from "./pages/Refunds ";
-import { useAuthInterceptor } from "./hooks/useAuthInterceptor";
-import { rehydrateAuth, validateAndUpdateAuth } from "./redux/slice/authSlice";
 
 const App = () => {
-  // ✅ ALL HOOKS AT TOP LEVEL
-  useAuthInterceptor();
   const [isLoading, setIsLoading] = useState(true);
-  const { adminToken, isAuthenticated } = useSelector(state => state.auth);
-  const dispatch = useDispatch(); 
+  const { adminToken } = useSelector(state => state.auth);
   const location = useLocation();
 
-  // ✅ SINGLE AUTH INITIALIZATION EFFECT
+  // Check authentication status on app load
   useEffect(() => {
-    const initializeAuth = async () => {
+    const checkAuth = async () => {
       try {
-        console.log('🔄 Initializing admin auth...');
-        
-        // Rehydrate auth state from localStorage
-        dispatch(rehydrateAuth());
-        
-        // Validate and update auth state
-        dispatch(validateAndUpdateAuth());
-
         // Simulate loading for better UX
         setTimeout(() => {
           setIsLoading(false);
-          console.log('✅ Auth initialization complete');
         }, 1000);
       } catch (error) {
-        console.error("Auth initialization error:", error);
+        console.error("Auth check error:", error);
         setIsLoading(false);
       }
     };
 
-    initializeAuth();
-  }, [dispatch]);
+    checkAuth();
+  }, [adminToken]);
 
-  // ✅ PERIODIC AUTH VALIDATION
-  useEffect(() => {
-    const interval = setInterval(() => {
-      dispatch(validateAndUpdateAuth());
-    }, 30000); // Validate every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [dispatch]);
-
-  // ✅ CONDITIONAL RETURN AFTER ALL HOOKS
+  // Show loading spinner while checking authentication
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -68,17 +45,17 @@ const App = () => {
   return (
     <div className="App">
       <Routes>
-        {/* Public routes */}
+        {/* Public routes - accessible without authentication */}
         <Route 
           path="/login" 
           element={
-            isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <Login />
+            adminToken ? <Navigate to="/admin/dashboard" replace /> : <Login />
           } 
         />
         <Route 
           path="/verify-otp" 
           element={
-            isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
+            adminToken ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
           } 
         />
         
@@ -112,7 +89,7 @@ const App = () => {
           path="/" 
           element={
             <Navigate 
-              to={isAuthenticated ? "/admin/dashboard" : "/login"} 
+              to={adminToken ? "/admin/dashboard" : "/login"} 
               replace 
             />
           } 
@@ -123,7 +100,7 @@ const App = () => {
           path="*" 
           element={
             <Navigate 
-              to={isAuthenticated ? "/admin/dashboard" : "/login"} 
+              to={adminToken ? "/admin/dashboard" : "/login"} 
               replace 
             />
           } 

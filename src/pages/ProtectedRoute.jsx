@@ -1,24 +1,33 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import React, { useEffect } from "react";
+import { Navigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useVerifyAdminTokenQuery } from "../redux/api/authApi";
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useSelector(state => state.auth);
+  const token = localStorage.getItem("token");
+  const admin = JSON.parse(localStorage.getItem("admin") || "null");
 
-  // Show loading while checking authentication
+  if (!token || !admin) return <Navigate to="/login" replace />;
+
+  const { data, error, isLoading } = useVerifyAdminTokenQuery();
+
+  useEffect(() => {
+    if (error) {
+      toast.error("Session expired! Please login again.");
+      localStorage.removeItem("token");
+      localStorage.removeItem("admin");
+    }
+  }, [error]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F8F6F4] to-[#E8D5C4] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-[#B97A57] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#5C3A21]">Loading...</p>
-        </div>
+      <div className="flex justify-center items-center h-screen bg-gray-50 text-lg font-semibold text-gray-600">
+        Checking Authorization...
       </div>
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  if (error || !data?.success) {
     return <Navigate to="/login" replace />;
   }
 

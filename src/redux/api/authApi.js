@@ -123,6 +123,7 @@ export const authApi = createApi({
         }),
         invalidatesTags: ["Admin"],
     }),
+   
 }),
 });
 
@@ -135,5 +136,6 @@ export const {
     useUpdateAdminProfileMutation,
     useUploadAdminPhotoMutation,
     useRemoveAdminPhotoMutation,
-    useUpdateAdminPreferencesMutation
+    useUpdateAdminPreferencesMutation,
+    
 } = authApi;
