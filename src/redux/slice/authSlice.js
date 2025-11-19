@@ -2,12 +2,13 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { authApi } from "../api/authApi";
 
+// 🔥 CHANGE: Use admin-specific localStorage keys
 const authSlice = createSlice({
     name: "authSlice",
     initialState: {
-        admin: JSON.parse(localStorage.getItem("admin")) || null,
-        adminToken: localStorage.getItem("adminToken") || null,
-        isAuthenticated: !!localStorage.getItem("adminToken"),
+        admin: JSON.parse(localStorage.getItem("admin_data")) || null,
+        adminToken: localStorage.getItem("admin_token") || null,
+        isAuthenticated: !!localStorage.getItem("admin_token"),
         isLoading: false,
     },
     reducers: {
@@ -15,15 +16,17 @@ const authSlice = createSlice({
             state.admin = payload.admin;
             state.adminToken = payload.token;
             state.isAuthenticated = true;
-            localStorage.setItem("admin", JSON.stringify(payload.admin));
-            localStorage.setItem("adminToken", payload.token);
+            // 🔥 CHANGE: Admin-specific keys
+            localStorage.setItem("admin_data", JSON.stringify(payload.admin));
+            localStorage.setItem("admin_token", payload.token);
         },
         clearCredentials: (state) => {
             state.admin = null;
             state.adminToken = null;
             state.isAuthenticated = false;
-            localStorage.removeItem("admin");
-            localStorage.removeItem("adminToken");
+            // 🔥 CHANGE: Clear admin-specific keys only
+            localStorage.removeItem("admin_data");
+            localStorage.removeItem("admin_token");
             localStorage.removeItem("adminEmail");
         },
         setLoading: (state, { payload }) => {
@@ -36,26 +39,25 @@ const authSlice = createSlice({
                 state.admin = payload.admin;
                 state.adminToken = payload.token;
                 state.isAuthenticated = true;
-                localStorage.setItem("admin", JSON.stringify(payload.admin));
-                localStorage.setItem("adminToken", payload.token);
+                localStorage.setItem("admin_data", JSON.stringify(payload.admin));
+                localStorage.setItem("admin_token", payload.token);
             }
         })
         .addMatcher(authApi.endpoints.logoutAdmin.matchFulfilled, (state) => {
             state.admin = null;
             state.adminToken = null;
             state.isAuthenticated = false;
-            localStorage.removeItem("admin");
-            localStorage.removeItem("adminToken");
+            localStorage.removeItem("admin_data");
+            localStorage.removeItem("admin_token");
             localStorage.removeItem("adminEmail");
         })
         .addMatcher(authApi.endpoints.verifyAdminToken.matchRejected, (state, { payload }) => {
-            // Clear credentials on token verification failure
             if (payload?.status === 401) {
                 state.admin = null;
                 state.adminToken = null;
                 state.isAuthenticated = false;
-                localStorage.removeItem("admin");
-                localStorage.removeItem("adminToken");
+                localStorage.removeItem("admin_data");
+                localStorage.removeItem("admin_token");
                 localStorage.removeItem("adminEmail");
             }
         })

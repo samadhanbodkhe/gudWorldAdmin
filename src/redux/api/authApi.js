@@ -3,8 +3,8 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Custom base query for admin auth
 const baseQueryWithAuth = async (args, api, extraOptions) => {
-  const token = localStorage.getItem("adminToken");
-  
+   const token = localStorage.getItem("admin_token");
+
   const baseQuery = fetchBaseQuery({
     baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/adminAuth`,
     credentials: "include",
@@ -20,8 +20,9 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
 
   // Handle 401 errors without redirecting to prevent loops
   if (result.error && result.error.status === 401) {
-    console.log('🛑 401 Unauthorized in base query');
-    // Don't clear storage here - let the component handle it
+     console.log('🛑 401 Unauthorized in base query');
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_data");
   }
 
   return result;
