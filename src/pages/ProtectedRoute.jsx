@@ -1,34 +1,33 @@
-import React, { useEffect } from "react";
-import { Navigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { useVerifyAdminTokenQuery } from "../redux/api/authApi";
+// src/pages/ProtectedRoute.jsx
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useVerifyAdminTokenQuery } from '../redux/api/authApi';
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  const admin = JSON.parse(localStorage.getItem("admin") || "null");
+  const { adminToken, isAuthenticated } = useSelector((state) => state.auth);
+  const location = useLocation();
+  
+  // Skip the query if no token
+  const { isLoading, error } = useVerifyAdminTokenQuery(undefined, {
+    skip: !adminToken,
+  });
 
-  if (!token || !admin) return <Navigate to="/login" replace />;
-
-  const { data, error, isLoading } = useVerifyAdminTokenQuery();
-
-  useEffect(() => {
-    if (error) {
-      toast.error("Session expired! Please login again.");
-      localStorage.removeItem("token");
-      localStorage.removeItem("admin");
-    }
-  }, [error]);
-
+  // Show loading while verifying token
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50 text-lg font-semibold text-gray-600">
-        Checking Authorization...
+      <div className="min-h-screen bg-[#F8F6F4] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-[#B97A57] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#5C3A21]">Verifying authentication...</p>
+        </div>
       </div>
     );
   }
 
-  if (error || !data?.success) {
-    return <Navigate to="/login" replace />;
+  // Redirect to login if not authenticated or token verification failed
+  if (!isAuthenticated || !adminToken || error) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return children;

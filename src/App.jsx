@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -17,7 +18,7 @@ import Refunds from "./pages/Refunds ";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { adminToken } = useSelector(state => state.auth);
+  const { adminToken, isAuthenticated } = useSelector(state => state.auth);
   const location = useLocation();
 
   // Check authentication status on app load
@@ -27,7 +28,7 @@ const App = () => {
         // Simulate loading for better UX
         setTimeout(() => {
           setIsLoading(false);
-        }, 1000);
+        }, 500);
       } catch (error) {
         console.error("Auth check error:", error);
         setIsLoading(false);
@@ -49,13 +50,13 @@ const App = () => {
         <Route 
           path="/login" 
           element={
-            adminToken ? <Navigate to="/admin/dashboard" replace /> : <Login />
+            isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <Login />
           } 
         />
         <Route 
           path="/verify-otp" 
           element={
-            adminToken ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
+            isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
           } 
         />
         
@@ -89,7 +90,7 @@ const App = () => {
           path="/" 
           element={
             <Navigate 
-              to={adminToken ? "/admin/dashboard" : "/login"} 
+              to={isAuthenticated ? "/admin/dashboard" : "/login"} 
               replace 
             />
           } 
@@ -100,7 +101,7 @@ const App = () => {
           path="*" 
           element={
             <Navigate 
-              to={adminToken ? "/admin/dashboard" : "/login"} 
+              to={isAuthenticated ? "/admin/dashboard" : "/login"} 
               replace 
             />
           } 

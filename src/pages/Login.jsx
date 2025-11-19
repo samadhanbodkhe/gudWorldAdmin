@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -10,11 +11,11 @@ const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { isAuthenticated, isLoading: authLoading } = useSelector(state => state.auth);
+  const { isAuthenticated } = useSelector(state => state.auth);
   const [loginAdmin, { isLoading: loginLoading }] = useLoginAdminMutation();
 
-  // ✅ Redirect if already authenticated - only after auth loading is complete
-  if (isAuthenticated && !authLoading) {
+  // ✅ Redirect if already authenticated
+  if (isAuthenticated) {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
@@ -59,18 +60,6 @@ const Login = () => {
     }
   };
 
-  // Show loading while checking authentication
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F8F6F4] to-[#E8D5C4] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-[#B97A57] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#5C3A21]">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F8F6F4] to-[#E8D5C4] flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -103,7 +92,7 @@ const Login = () => {
                   placeholder="Enter your admin email"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B97A57] focus:border-transparent transition-colors"
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || loginLoading}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,10 +104,10 @@ const Login = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || loginLoading}
               className="w-full bg-[#B97A57] text-white py-3 px-4 rounded-lg hover:bg-[#9C623E] focus:outline-none focus:ring-2 focus:ring-[#B97A57] focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {isLoading ? (
+              {(isLoading || loginLoading) ? (
                 <div className="flex items-center justify-center">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                   Sending OTP...

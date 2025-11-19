@@ -1,32 +1,37 @@
 // src/redux/api/authApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-export const authApi = createApi({
-    reducerPath: "authApi",
-    baseQuery: fetchBaseQuery({
-        baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/adminAuth`,
-        credentials: "include",
-        prepareHeaders: (headers) => {
-            const token = localStorage.getItem("adminToken");
-            if (token) {
-                headers.set("Authorization", `Bearer ${token}`);
-            }
-            return headers;
-        },
-    }),
-    fetchFn: async (input, init) => {
-  const response = await fetch(input, init);
+// Custom base query for admin auth
+const baseQueryWithAuth = async (args, api, extraOptions) => {
+  const token = localStorage.getItem("adminToken");
   
-  if (response.status === 401) {
-    // Auto logout on 401
+  const baseQuery = fetchBaseQuery({
+    baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/adminAuth`,
+    credentials: "include",
+    prepareHeaders: (headers) => {
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  });
+
+  const result = await baseQuery(args, api, extraOptions);
+
+  // Handle 401 errors
+  if (result.error && result.error.status === 401) {
     localStorage.removeItem("admin");
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminEmail");
-    window.location.href = '/login';
+    // Don't redirect here - let components handle it
   }
-  
-  return response;
-},
+
+  return result;
+};
+
+export const authApi = createApi({
+    reducerPath: "authApi",
+    baseQuery: baseQueryWithAuth,
     tagTypes: ["Admin"],
     endpoints: (builder) => ({
         loginAdmin: builder.mutation({
@@ -45,13 +50,7 @@ export const authApi = createApi({
                 body: otpData,
             }),
             invalidatesTags: ["Admin"],
-            transformResponse: (response) => {
-                if (response?.admin && response?.token) {
-                    localStorage.setItem("admin", JSON.stringify(response.admin));
-                    localStorage.setItem("adminToken", response.token);
-                }
-                return response;
-            },
+            // Remove transformResponse as we'll handle in slice
         }),
 
         logoutAdmin: builder.mutation({
@@ -60,71 +59,64 @@ export const authApi = createApi({
                 method: "POST",
             }),
             invalidatesTags: ["Admin"],
-            transformResponse: (response) => {
-                localStorage.removeItem("admin");
-                localStorage.removeItem("adminToken");
-                localStorage.removeItem("adminEmail");
-                return response;
+            // Remove transformResponse as we'll handle in slice
+        }),
+
+        getAdminProfile: builder.query({
+            query: () => ({
+                url: "/getAdminProfile",
+                method: "GET",
+            }),
+            providesTags: ["Admin"],
+        }),
+
+        verifyAdminToken: builder.query({
+            query: () => ({
+                url: "/verifyToken",
+                method: "GET",
+            }),
+            providesTags: ["Admin"],
+        }),
+
+        updateAdminProfile: builder.mutation({
+            query: (profileData) => ({
+                url: "/updateAdminProfile",
+                method: "PUT",
+                body: profileData,
+            }),
+            invalidatesTags: ["Admin"],
+        }),
+
+        uploadAdminPhoto: builder.mutation({
+            query: (file) => {
+                const formData = new FormData();
+                formData.append("photo", file);
+                return {
+                    url: "/uploadPhoto",
+                    method: "POST",
+                    body: formData,
+                };
             },
-    }),
-
-    getAdminProfile: builder.query({
-        query: () => ({
-            url: "/getAdminProfile",
-            method: "GET",
+            invalidatesTags: ["Admin"],
         }),
-        providesTags: ["Admin"],
-    }),
 
-    verifyAdminToken: builder.query({
-        query: () => ({
-            url: "/verifyToken",
-            method: "GET",
+        removeAdminPhoto: builder.mutation({
+            query: () => ({
+                url: "/removePhoto",
+                method: "DELETE",
+            }),
+            invalidatesTags: ["Admin"],
         }),
-        providesTags: ["Admin"],
-    }),
 
-    // Updated mutations with correct endpoints
-    updateAdminProfile: builder.mutation({
-        query: (profileData) => ({
-            url: "/updateAdminProfile",
-            method: "PUT",
-            body: profileData,
+        updateAdminPreferences: builder.mutation({
+            query: (preferences) => ({
+                url: "/updatePreferences",
+                method: "PUT",
+                body: preferences,
+            }),
+            invalidatesTags: ["Admin"],
         }),
-        invalidatesTags: ["Admin"],
     }),
-
-    uploadAdminPhoto: builder.mutation({
-        query: (file) => {
-            const formData = new FormData();
-            formData.append("photo", file);
-            return {
-                url: "/uploadPhoto",
-                method: "POST",
-                body: formData,
-            };
-        },
-        invalidatesTags: ["Admin"],
-    }),
-
-    removeAdminPhoto: builder.mutation({
-        query: () => ({
-            url: "/removePhoto",
-            method: "DELETE",
-        }),
-        invalidatesTags: ["Admin"],
-    }),
-
-    updateAdminPreferences: builder.mutation({
-        query: (preferences) => ({
-            url: "/updatePreferences", // This matches the backend route now
-            method: "PUT",
-            body: preferences,
-        }),
-        invalidatesTags: ["Admin"],
-    }),
-   
-}),
 });
 
 export const {
@@ -137,5 +129,4 @@ export const {
     useUploadAdminPhotoMutation,
     useRemoveAdminPhotoMutation,
     useUpdateAdminPreferencesMutation,
-    
 } = authApi;
