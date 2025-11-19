@@ -2,7 +2,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { authApi } from "../api/authApi";
 
-// 🔥 CHANGE: Use admin-specific localStorage keys
 const authSlice = createSlice({
     name: "authSlice",
     initialState: {
@@ -16,7 +15,6 @@ const authSlice = createSlice({
             state.admin = payload.admin;
             state.adminToken = payload.token;
             state.isAuthenticated = true;
-            // 🔥 CHANGE: Admin-specific keys
             localStorage.setItem("admin_data", JSON.stringify(payload.admin));
             localStorage.setItem("admin_token", payload.token);
         },
@@ -24,7 +22,6 @@ const authSlice = createSlice({
             state.admin = null;
             state.adminToken = null;
             state.isAuthenticated = false;
-            // 🔥 CHANGE: Clear admin-specific keys only
             localStorage.removeItem("admin_data");
             localStorage.removeItem("admin_token");
             localStorage.removeItem("adminEmail");
