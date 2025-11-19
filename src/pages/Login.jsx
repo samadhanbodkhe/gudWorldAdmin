@@ -1,7 +1,7 @@
 // src/pages/Login.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useLoginAdminMutation } from "../redux/api/authApi";
 import { toast } from "react-toastify";
 
@@ -9,7 +9,6 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   
   const { isAuthenticated } = useSelector(state => state.auth);
   const [loginAdmin, { isLoading: loginLoading }] = useLoginAdminMutation();

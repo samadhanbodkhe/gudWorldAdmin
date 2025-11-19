@@ -1,32 +1,38 @@
 // src/pages/ProtectedRoute.jsx
 import { useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useVerifyAdminTokenQuery } from '../redux/api/authApi';
+import { clearCredentials } from '../redux/slice/authSlice';
+import LoadingSpinner from './LoadingSpinner';
 
 const ProtectedRoute = ({ children }) => {
-  const { adminToken, isAuthenticated } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
   const location = useLocation();
+  const { adminToken, isAuthenticated } = useSelector((state) => state.auth);
   
-  // Skip the query if no token
-  const { isLoading, error } = useVerifyAdminTokenQuery(undefined, {
-    skip: !adminToken,
+  // Only verify token if we have one and are authenticated
+  const { isLoading, error, isError } = useVerifyAdminTokenQuery(undefined, {
+    skip: !adminToken || !isAuthenticated,
+    refetchOnMountOrArgChange: false, // Prevent unnecessary refetches
   });
+
+  // Handle authentication errors
+  useEffect(() => {
+    if (isError || error) {
+      console.log('🛑 Token verification failed:', error);
+      // Clear credentials and redirect to login
+      dispatch(clearCredentials());
+    }
+  }, [isError, error, dispatch]);
 
   // Show loading while verifying token
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F8F6F4] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-[#B97A57] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#5C3A21]">Verifying authentication...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
-  // Redirect to login if not authenticated or token verification failed
-  if (!isAuthenticated || !adminToken || error) {
+  // Redirect to login if not authenticated
+  if (!isAuthenticated || !adminToken) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

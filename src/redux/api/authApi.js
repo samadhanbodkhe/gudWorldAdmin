@@ -18,12 +18,10 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
 
   const result = await baseQuery(args, api, extraOptions);
 
-  // Handle 401 errors
+  // Handle 401 errors without redirecting to prevent loops
   if (result.error && result.error.status === 401) {
-    localStorage.removeItem("admin");
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminEmail");
-    // Don't redirect here - let components handle it
+    console.log('🛑 401 Unauthorized in base query');
+    // Don't clear storage here - let the component handle it
   }
 
   return result;
@@ -50,7 +48,6 @@ export const authApi = createApi({
                 body: otpData,
             }),
             invalidatesTags: ["Admin"],
-            // Remove transformResponse as we'll handle in slice
         }),
 
         logoutAdmin: builder.mutation({
@@ -59,7 +56,6 @@ export const authApi = createApi({
                 method: "POST",
             }),
             invalidatesTags: ["Admin"],
-            // Remove transformResponse as we'll handle in slice
         }),
 
         getAdminProfile: builder.query({
@@ -76,6 +72,8 @@ export const authApi = createApi({
                 method: "GET",
             }),
             providesTags: ["Admin"],
+            // Prevent retries on 401
+            keepUnusedDataFor: 0,
         }),
 
         updateAdminProfile: builder.mutation({

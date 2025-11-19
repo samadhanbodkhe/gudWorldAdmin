@@ -11,14 +11,14 @@ const authSlice = createSlice({
         isLoading: false,
     },
     reducers: {
-        setAdminCredentials: (state, { payload }) => {
+        setCredentials: (state, { payload }) => {
             state.admin = payload.admin;
             state.adminToken = payload.token;
             state.isAuthenticated = true;
             localStorage.setItem("admin", JSON.stringify(payload.admin));
             localStorage.setItem("adminToken", payload.token);
         },
-        clearAdminCredentials: (state) => {
+        clearCredentials: (state) => {
             state.admin = null;
             state.adminToken = null;
             state.isAuthenticated = false;
@@ -48,13 +48,18 @@ const authSlice = createSlice({
             localStorage.removeItem("adminToken");
             localStorage.removeItem("adminEmail");
         })
-        .addMatcher(authApi.endpoints.verifyAdmin.matchPending, (state) => {
-            state.isLoading = true;
-        })
-        .addMatcher(authApi.endpoints.verifyAdmin.matchRejected, (state) => {
-            state.isLoading = false;
+        .addMatcher(authApi.endpoints.verifyAdminToken.matchRejected, (state, { payload }) => {
+            // Clear credentials on token verification failure
+            if (payload?.status === 401) {
+                state.admin = null;
+                state.adminToken = null;
+                state.isAuthenticated = false;
+                localStorage.removeItem("admin");
+                localStorage.removeItem("adminToken");
+                localStorage.removeItem("adminEmail");
+            }
         })
 });
 
-export const { setAdminCredentials, clearAdminCredentials, setLoading } = authSlice.actions;
+export const { setCredentials, clearCredentials, setLoading } = authSlice.actions;
 export default authSlice.reducer;
