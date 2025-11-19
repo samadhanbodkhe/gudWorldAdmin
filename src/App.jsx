@@ -1,7 +1,6 @@
-// src/App.jsx
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
@@ -15,40 +14,28 @@ import Profile from "./pages/Profile";
 import VerifyOtp from "./pages/VerifyOtp ";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import Refunds from "./pages/Refunds ";
-import { clearCredentials } from "./redux/slice/authSlice";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const dispatch = useDispatch();
-  const { adminToken, isAuthenticated } = useSelector(state => state.auth);
+  const { adminToken } = useSelector(state => state.auth);
   const location = useLocation();
 
   // Check authentication status on app load
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check if we have a token but it might be invalid
-        const token = localStorage.getItem("adminToken");
-        const admin = localStorage.getItem("admin");
-        
-        if (!token || !admin) {
-          // Clear any invalid state
-          dispatch(clearCredentials());
-        }
-        
         // Simulate loading for better UX
         setTimeout(() => {
           setIsLoading(false);
-        }, 500);
+        }, 1000);
       } catch (error) {
         console.error("Auth check error:", error);
-        dispatch(clearCredentials());
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [dispatch]);
+  }, [adminToken]);
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -62,13 +49,13 @@ const App = () => {
         <Route 
           path="/login" 
           element={
-            isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <Login />
+            adminToken ? <Navigate to="/admin/dashboard" replace /> : <Login />
           } 
         />
         <Route 
           path="/verify-otp" 
           element={
-            isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
+            adminToken ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
           } 
         />
         
@@ -102,7 +89,7 @@ const App = () => {
           path="/" 
           element={
             <Navigate 
-              to={isAuthenticated ? "/admin/dashboard" : "/login"} 
+              to={adminToken ? "/admin/dashboard" : "/login"} 
               replace 
             />
           } 
@@ -113,7 +100,7 @@ const App = () => {
           path="*" 
           element={
             <Navigate 
-              to={isAuthenticated ? "/admin/dashboard" : "/login"} 
+              to={adminToken ? "/admin/dashboard" : "/login"} 
               replace 
             />
           } 

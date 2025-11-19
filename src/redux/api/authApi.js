@@ -1,36 +1,25 @@
 // src/redux/api/authApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// Custom base query for admin auth
-const baseQueryWithAuth = async (args, api, extraOptions) => {
-   const token = localStorage.getItem("admin_token");
-
-  const baseQuery = fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/adminAuth`,
-    credentials: "include",
-    prepareHeaders: (headers) => {
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  });
-
-  const result = await baseQuery(args, api, extraOptions);
-
-  // Handle 401 errors without redirecting to prevent loops
-  if (result.error && result.error.status === 401) {
-     console.log('🛑 401 Unauthorized in base query');
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_data");
-  }
-
-  return result;
-};
-
 export const authApi = createApi({
     reducerPath: "authApi",
-    baseQuery: baseQueryWithAuth,
+    baseQuery: fetchBaseQuery({
+        baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/adminAuth`,
+        credentials: "include",
+        prepareHeaders: (headers,{ getState }) => {
+              const token = localStorage.getItem("adminToken") || 
+                     getState()?.auth?.adminToken;
+            if (token) {
+            headers.set('authorization', `Bearer ${token}`);
+            headers.set('x-admin-token', token); // ✅ Additional header
+        }
+        
+        headers.set('x-client-type', 'admin');
+        return headers;
+    
+        },
+    }),
+    
     tagTypes: ["Admin"],
     endpoints: (builder) => ({
         loginAdmin: builder.mutation({
@@ -49,6 +38,13 @@ export const authApi = createApi({
                 body: otpData,
             }),
             invalidatesTags: ["Admin"],
+            transformResponse: (response) => {
+                if (response?.admin && response?.token) {
+                    localStorage.setItem("admin", JSON.stringify(response.admin));
+                    localStorage.setItem("adminToken", response.token);
+                }
+                return response;
+            },
         }),
 
         logoutAdmin: builder.mutation({
@@ -73,10 +69,9 @@ export const authApi = createApi({
                 method: "GET",
             }),
             providesTags: ["Admin"],
-            // Prevent retries on 401
-            keepUnusedDataFor: 0,
         }),
 
+        // Updated mutations with correct endpoints
         updateAdminProfile: builder.mutation({
             query: (profileData) => ({
                 url: "/updateAdminProfile",
@@ -109,7 +104,7 @@ export const authApi = createApi({
 
         updateAdminPreferences: builder.mutation({
             query: (preferences) => ({
-                url: "/updatePreferences",
+                url: "/updatePreferences", // This matches the backend route now
                 method: "PUT",
                 body: preferences,
             }),
@@ -127,5 +122,5 @@ export const {
     useUpdateAdminProfileMutation,
     useUploadAdminPhotoMutation,
     useRemoveAdminPhotoMutation,
-    useUpdateAdminPreferencesMutation,
+    useUpdateAdminPreferencesMutation
 } = authApi;

@@ -1,39 +1,25 @@
-// src/pages/ProtectedRoute.jsx
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useVerifyAdminTokenQuery } from '../redux/api/authApi';
-import { clearCredentials } from '../redux/slice/authSlice';
-import LoadingSpinner from './LoadingSpinner';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const ProtectedRoute = ({ children }) => {
-  const dispatch = useDispatch();
-  const location = useLocation();
-  const { adminToken, isAuthenticated } = useSelector((state) => state.auth);
-  
-  // Only verify token if we have one and are authenticated
-  const { isLoading, error, isError } = useVerifyAdminTokenQuery(undefined, {
-    skip: !adminToken || !isAuthenticated,
-    refetchOnMountOrArgChange: false, // Prevent unnecessary refetches
-  });
+  const { isAuthenticated, isLoading } = useSelector(state => state.auth);
 
-  // Handle authentication errors
-  useEffect(() => {
-    if (isError || error) {
-      console.log('🛑 Token verification failed:', error);
-      // Clear credentials and redirect to login
-      dispatch(clearCredentials());
-    }
-  }, [isError, error, dispatch]);
-
-  // Show loading while verifying token
+  // Show loading while checking authentication
   if (isLoading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F8F6F4] to-[#E8D5C4] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-[#B97A57] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#5C3A21]">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   // Redirect to login if not authenticated
-  if (!isAuthenticated || !adminToken) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  if (!isAuthenticated) {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return children;
