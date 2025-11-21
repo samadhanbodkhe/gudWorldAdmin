@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useSelector(state => state.auth);
 
-  // Show loading while checking authentication
+  // Show loader
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F8F6F4] to-[#E8D5C4] flex items-center justify-center">
@@ -17,9 +17,9 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // Redirect to login if not authenticated
+  // ❗ FIXED — Redirect always to /login (NOT /admin/login)
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;

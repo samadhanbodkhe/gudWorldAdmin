@@ -18,14 +18,15 @@ export const productApi = createApi({
   tagTypes: ["Product", "Stock"],
   endpoints: (builder) => ({
     // Get all products
-    getProducts: builder.query({
-      query: ({ page = 1, limit = 10, q = "", category = "", lowStock = "" }) => ({
-        url: "/getProducts",
-        method: "GET",
-        params: { page, limit, q, category, lowStock },
-      }),
-      providesTags: ["Product"],
-    }),
+// Get all products - UPDATED: Changed lowStock to stockStatus
+getProducts: builder.query({
+  query: ({ page = 1, limit = 10, q = "", category = "", stockStatus = "" }) => ({
+    url: "/getProducts",
+    method: "GET",
+    params: { page, limit, q, category, stockStatus }, // Changed from lowStock to stockStatus
+  }),
+  providesTags: ["Product"],
+}),
 
     // Get single product
     getProduct: builder.query({

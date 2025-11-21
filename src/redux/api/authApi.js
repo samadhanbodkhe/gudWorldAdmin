@@ -1,4 +1,3 @@
-// src/redux/api/authApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const authApi = createApi({
@@ -6,17 +5,13 @@ export const authApi = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/adminAuth`,
         credentials: "include",
-        prepareHeaders: (headers,{ getState }) => {
-              const token = localStorage.getItem("adminToken") || 
-                     getState()?.auth?.adminToken;
+        prepareHeaders: (headers, { getState }) => {
+            const token = localStorage.getItem("adminToken");
             if (token) {
-            headers.set('authorization', `Bearer ${token}`);
-            headers.set('x-admin-token', token); // ✅ Additional header
-        }
-        
-        headers.set('x-client-type', 'admin');
-        return headers;
-    
+                headers.set('authorization', `Bearer ${token}`);
+            }
+            headers.set('x-client-type', 'admin');
+            return headers;
         },
     }),
     
@@ -53,6 +48,11 @@ export const authApi = createApi({
                 method: "POST",
             }),
             invalidatesTags: ["Admin"],
+            transformResponse: (response) => {
+                localStorage.removeItem("adminToken");
+                localStorage.removeItem("admin");
+                return response;
+            },
         }),
 
         getAdminProfile: builder.query({
@@ -71,7 +71,7 @@ export const authApi = createApi({
             providesTags: ["Admin"],
         }),
 
-        // Updated mutations with correct endpoints
+        // Profile mutations
         updateAdminProfile: builder.mutation({
             query: (profileData) => ({
                 url: "/updateAdminProfile",
@@ -89,6 +89,7 @@ export const authApi = createApi({
                     url: "/uploadPhoto",
                     method: "POST",
                     body: formData,
+                    // Don't set Content-Type header - let browser set it with boundary
                 };
             },
             invalidatesTags: ["Admin"],
@@ -104,9 +105,27 @@ export const authApi = createApi({
 
         updateAdminPreferences: builder.mutation({
             query: (preferences) => ({
-                url: "/updatePreferences", // This matches the backend route now
+                url: "/updatePreferences",
                 method: "PUT",
                 body: preferences,
+            }),
+            invalidatesTags: ["Admin"],
+        }),
+
+        // Email verification mutations
+        sendEmailVerification: builder.mutation({
+            query: (emailData) => ({
+                url: "/send-email-verification",
+                method: "POST",
+                body: emailData,
+            }),
+        }),
+
+        verifyEmailOtp: builder.mutation({
+            query: (otpData) => ({
+                url: "/verify-email-otp",
+                method: "POST",
+                body: otpData,
             }),
             invalidatesTags: ["Admin"],
         }),
@@ -122,5 +141,7 @@ export const {
     useUpdateAdminProfileMutation,
     useUploadAdminPhotoMutation,
     useRemoveAdminPhotoMutation,
-    useUpdateAdminPreferencesMutation
+    useUpdateAdminPreferencesMutation,
+    useSendEmailVerificationMutation,
+    useVerifyEmailOtpMutation
 } = authApi;

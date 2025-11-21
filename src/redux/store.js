@@ -5,7 +5,7 @@ import { dashboardApi } from "./api/dashboardApi";
 import { productApi } from "./api/productApi";
 import { ordersApi } from "./api/ordersApi";
 import { userApi } from "./api/userApi";
-import { refundApi } from "./api/refundApi";
+import { cancelOrderApi } from "./api/cancelOrderApi";
 
 const reduxStore = configureStore({
     reducer: {
@@ -14,7 +14,7 @@ const reduxStore = configureStore({
         [productApi.reducerPath]: productApi.reducer,
         [ordersApi.reducerPath]: ordersApi.reducer,
         [userApi.reducerPath]: userApi.reducer,
-        [refundApi.reducerPath]: refundApi.reducer,
+        [cancelOrderApi.reducerPath]: cancelOrderApi.reducer,
         auth: authReducer, // Use the imported reducer
     },
     middleware: def=>[
@@ -24,7 +24,7 @@ const reduxStore = configureStore({
         productApi.middleware,
         ordersApi.middleware,
         userApi.middleware,
-        refundApi.middleware,
+        cancelOrderApi.middleware,
 
     ]
 

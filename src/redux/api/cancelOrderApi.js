@@ -1,8 +1,8 @@
-// src/redux/api/refundApi.js
+// src/redux/api/cancelOrderApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-export const refundApi = createApi({
-  reducerPath: "refundApi",
+export const cancelOrderApi = createApi({
+  reducerPath: "cancelOrderApi",
   baseQuery: fetchBaseQuery({
     baseUrl: `${import.meta.env.VITE_BACKEND_URL}/api/v1/booking`,
     credentials: "include",
@@ -14,9 +14,9 @@ export const refundApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Refunds", "CancelledOrders"],
+  tagTypes: ["CancelledOrders"],
   endpoints: (builder) => ({
-    // Get all cancelled orders (for pending refunds)
+    // Get all cancelled orders
     getCancelledOrders: builder.query({
       query: ({ page = 1, limit = 10, search = "", status = "all" }) => ({
         url: `/getCancelledOrders`,
@@ -30,28 +30,10 @@ export const refundApi = createApi({
       query: (id) => `/getCancelledOrderById/${id}`,
       providesTags: ["CancelledOrders"],
     }),
-
-    // Process refund for cancelled order
-    processRefund: builder.mutation({
-      query: ({ id, refundAmount, refundReason }) => ({
-        url: `/processRefund/${id}`,
-        method: "POST",
-        body: { refundAmount, refundReason },
-      }),
-      invalidatesTags: ["CancelledOrders"],
-    }),
-
-    // Get refund analytics
-    getRefundAnalytics: builder.query({
-      query: () => "/getRefundAnalytics",
-      providesTags: ["Refunds"],
-    }),
   }),
 });
 
 export const {
   useGetCancelledOrdersQuery,
   useGetCancelledOrderByIdQuery,
-  useProcessRefundMutation,
-  useGetRefundAnalyticsQuery,
-} = refundApi;
+} = cancelOrderApi;

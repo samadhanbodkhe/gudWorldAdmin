@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
+
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Orders from "./pages/Orders";
@@ -11,33 +12,21 @@ import Header from "./components/Header";
 import Sidebar from "./constants/Sidebar";
 import LoadingSpinner from "./pages/LoadingSpinner";
 import Profile from "./pages/Profile";
-import VerifyOtp from "./pages/VerifyOtp ";
 import ProtectedRoute from "./pages/ProtectedRoute";
+import VerifyOtp from "./pages/VerifyOtp ";
 import Refunds from "./pages/Refunds ";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { adminToken } = useSelector(state => state.auth);
+  const { adminToken } = useSelector((state) => state.auth);
   const location = useLocation();
 
-  // Check authentication status on app load
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Simulate loading for better UX
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 1000);
-      } catch (error) {
-        console.error("Auth check error:", error);
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
   }, [adminToken]);
 
-  // Show loading spinner while checking authentication
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -45,29 +34,31 @@ const App = () => {
   return (
     <div className="App">
       <Routes>
-        {/* Public routes - accessible without authentication */}
-        <Route 
-          path="/login" 
+        {/* Public Routes */}
+        <Route
+          path="/login"
           element={
             adminToken ? <Navigate to="/admin/dashboard" replace /> : <Login />
-          } 
+          }
         />
-        <Route 
-          path="/verify-otp" 
+
+        <Route
+          path="/verify-otp"
           element={
             adminToken ? <Navigate to="/admin/dashboard" replace /> : <VerifyOtp />
-          } 
+          }
         />
-        
-        {/* Protected routes - require authentication */}
-        <Route 
-          path="/admin/*" 
+
+        {/* Protected Admin Routes */}
+        <Route
+          path="/admin/*"
           element={
             <ProtectedRoute>
               <div className="flex">
                 <Sidebar />
                 <div className="ml-64 flex-1 min-h-screen bg-[#F8F6F4]">
                   <Header />
+
                   <Routes>
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="products" element={<Products />} />
@@ -76,34 +67,39 @@ const App = () => {
                     <Route path="banners" element={<Banners />} />
                     <Route path="profile" element={<Profile />} />
                     <Route path="refunds" element={<Refunds />} />
-                    <Route path="" element={<Navigate to="dashboard" replace />} />
+
+                    {/* Default Route */}
+                    <Route
+                      path=""
+                      element={<Navigate to="dashboard" replace />}
+                    />
                   </Routes>
                 </div>
               </div>
             </ProtectedRoute>
-          } 
+          }
         />
-        
-        {/* Default redirects */}
-        <Route 
-          path="/" 
+
+        {/* Default Redirect */}
+        <Route
+          path="/"
           element={
-            <Navigate 
-              to={adminToken ? "/admin/dashboard" : "/login"} 
-              replace 
+            <Navigate
+              to={adminToken ? "/admin/dashboard" : "/login"}
+              replace
             />
-          } 
+          }
         />
-        
-        {/* Catch all route */}
-        <Route 
-          path="*" 
+
+        {/* 404 Redirect */}
+        <Route
+          path="*"
           element={
-            <Navigate 
-              to={adminToken ? "/admin/dashboard" : "/login"} 
-              replace 
+            <Navigate
+              to={adminToken ? "/admin/dashboard" : "/login"}
+              replace
             />
-          } 
+          }
         />
       </Routes>
     </div>

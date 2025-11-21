@@ -75,6 +75,12 @@ const ProductCard = ({ product, onEdit, onStockAdjust, onDelete }) => {
                 Low
               </span>
             )}
+            {product.isOutOfStock && (
+              <span className="text-red-600 text-xs ml-1 flex items-center">
+                <FiAlertTriangle className="w-3 h-3 mr-1" />
+                Out of Stock
+              </span>
+            )}
           </p>
         </div>
         <div>
@@ -118,8 +124,8 @@ const MobileFilters = ({
   setSearch, 
   category, 
   setCategory, 
-  lowStock, 
-  setLowStock, 
+  stockStatus, 
+  setStockStatus, 
   onReset,
   isOpen,
   onClose 
@@ -171,12 +177,13 @@ const MobileFilters = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Stock Status</label>
             <select
-              value={lowStock}
-              onChange={(e) => setLowStock(e.target.value)}
+              value={stockStatus}
+              onChange={(e) => setStockStatus(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
             >
               <option value="">All Stock</option>
-              <option value="true">Low Stock Only</option>
+              <option value="low">Low Stock Only</option>
+              <option value="out">Out of Stock</option>
             </select>
           </div>
 
@@ -205,7 +212,7 @@ const Products = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [lowStock, setLowStock] = useState("");
+  const [stockStatus, setStockStatus] = useState("");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // State for modals
@@ -237,13 +244,13 @@ const Products = () => {
     note: ""
   });
 
-  // API calls
+  // API calls - UPDATED: Changed lowStock to stockStatus
   const { data, isLoading, error, refetch } = useGetProductsQuery({
     page,
     limit: 10,
     q: search,
     category,
-    lowStock
+    stockStatus
   });
 
   const { data: lowStockData } = useGetLowStockAlertsQuery({ limit: 5 });
@@ -264,7 +271,7 @@ const Products = () => {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, category, lowStock]);
+  }, [search, category, stockStatus]);
 
   // Calculate price with GST for display
   const calculatePriceWithGst = (unitPrice, gstRate) => {
@@ -445,7 +452,7 @@ const Products = () => {
   const resetFilters = () => {
     setSearch("");
     setCategory("");
-    setLowStock("");
+    setStockStatus("");
     setPage(1);
     setShowMobileFilters(false);
   };
@@ -552,13 +559,15 @@ const Products = () => {
             <option value="Other">Other</option>
           </select>
 
+          {/* ✅ FIXED: Stock Status Filter with three options */}
           <select
-            value={lowStock}
-            onChange={(e) => setLowStock(e.target.value)}
+            value={stockStatus}
+            onChange={(e) => setStockStatus(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B97A57] focus:border-transparent"
           >
             <option value="">All Stock</option>
-            <option value="true">Low Stock Only</option>
+            <option value="low">Low Stock Only</option>
+            <option value="out">Out of Stock</option>
           </select>
 
           <button
@@ -587,7 +596,8 @@ const Products = () => {
           Showing {products.length} product{products.length !== 1 ? 's' : ''}
           {search && ` for "${search}"`}
           {category && ` in ${category}`}
-          {lowStock && ` (Low Stock)`}
+          {stockStatus === "low" && ` (Low Stock)`}
+          {stockStatus === "out" && ` (Out of Stock)`}
         </p>
       </div>
 
@@ -654,6 +664,12 @@ const Products = () => {
                       <div className="text-xs text-orange-600 flex items-center">
                         <FiAlertTriangle className="w-3 h-3 mr-1" />
                         Low Stock
+                      </div>
+                    )}
+                    {product.isOutOfStock && (
+                      <div className="text-xs text-red-600 flex items-center">
+                        <FiAlertTriangle className="w-3 h-3 mr-1" />
+                        Out of Stock
                       </div>
                     )}
                   </td>
@@ -1119,6 +1135,7 @@ const Products = () => {
                       <div>
                         <label className="text-sm font-medium text-gray-500">Available Stock</label>
                         <p className={`text-lg font-semibold ${
+                          selectedProduct.isOutOfStock ? 'text-red-600' : 
                           selectedProduct.isLowStock ? 'text-orange-600' : 'text-green-600'
                         }`}>
                           {selectedProduct.availableStock} {selectedProduct.unit}
@@ -1129,6 +1146,14 @@ const Products = () => {
                           <p className="text-sm text-orange-800 flex items-center">
                             <FiAlertTriangle className="w-4 h-4 mr-2" />
                             Low stock! Minimum: {selectedProduct.minStockLevel} {selectedProduct.unit}
+                          </p>
+                        </div>
+                      )}
+                      {selectedProduct.isOutOfStock && (
+                        <div className="bg-red-50 border border-red-200 rounded p-3">
+                          <p className="text-sm text-red-800 flex items-center">
+                            <FiAlertTriangle className="w-4 h-4 mr-2" />
+                            Out of stock! Please restock immediately.
                           </p>
                         </div>
                       )}
@@ -1268,8 +1293,8 @@ const Products = () => {
         setSearch={setSearch}
         category={category}
         setCategory={setCategory}
-        lowStock={lowStock}
-        setLowStock={setLowStock}
+        stockStatus={stockStatus}
+        setStockStatus={setStockStatus}
         onReset={resetFilters}
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}

@@ -1,3 +1,4 @@
+// src/components/Sidebar.jsx
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -27,7 +28,7 @@ const Sidebar = () => {
   return (
     <>
       {/* Mobile Header with Toggle Button */}
-      <div className="md:hidden flex items-center justify-between bg-[#5C3A21] text-white px-4 py-3 shadow-md fixed top-0 left-0 right-0 z-50">
+      <div className="md:hidden flex items-center justify-between bg-[#5C3A21] text-white px-4 py-3 shadow-md fixed top-0 left-0 right-0 z-50 h-14">
         <h1 className="text-xl font-bold">Govind Admin</h1>
         <button onClick={() => setIsOpen(!isOpen)} className="text-2xl">
           {isOpen ? <FiX /> : <FiMenu />}
@@ -40,26 +41,30 @@ const Sidebar = () => {
         ${isOpen ? "translate-x-0" : "-translate-x-full"} 
         md:translate-x-0 md:w-64 w-64`}
       >
-        <div className="hidden md:block p-6 text-2xl font-bold border-b border-[#7b5435]">
+        <div className="hidden md:flex items-center p-6 text-2xl font-bold border-b border-[#7b5435] h-14">
           Govind Admin
         </div>
-        <nav className="flex-1 mt-6 overflow-y-auto">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              onClick={() => setIsOpen(false)} // close sidebar on mobile after navigation
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-6 py-3 text-base hover:bg-[#B97A57] transition-colors ${
-                  isActive ? "bg-[#B97A57]" : ""
-                }`
-              }
-            >
-              {item.icon}
-              {item.name}
-            </NavLink>
-          ))}
-        </nav>
+        
+        {/* Sidebar Content with proper scrolling */}
+        <div className="h-full flex flex-col">
+          <nav className="flex-1 overflow-y-auto py-4">
+            {menuItems.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-6 py-3 text-base hover:bg-[#B97A57] transition-colors ${
+                    isActive ? "bg-[#B97A57]" : ""
+                  }`
+                }
+              >
+                {item.icon}
+                {item.name}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
       </aside>
 
       {/* Overlay for mobile when sidebar open */}
