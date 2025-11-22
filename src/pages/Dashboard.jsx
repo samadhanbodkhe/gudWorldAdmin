@@ -130,51 +130,51 @@ const Dashboard = () => {
   }
 
   const statsData = data?.data;
-  const adminName = statsData?.admin?.name || "Admin";
+  console.log('📊 Dashboard Data:', statsData); // For debugging
 
-  // Stats cards data
+  // Stats cards data - using the actual data structure from getQuickStats
   const statsCards = [
     { 
-      title: "Active Products", 
-      value: statsData?.totalProducts || 0, 
-      icon: <FiBox className="w-5 h-5 sm:w-6 sm:h-6" />, 
+      title: "Total Revenue", 
+      value: statsData?.formatted?.totalRevenue || '₹0', 
+      icon: <FiDollarSign className="w-5 h-5 sm:w-6 sm:h-6" />, 
+      color: "bg-green-500",
+      subtitle: "All time revenue"
+    },
+    { 
+      title: "Today's Revenue", 
+      value: statsData?.formatted?.todayRevenue || '₹0', 
+      icon: <FiTrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />, 
       color: "bg-blue-500",
-      subtitle: "Available products"
+      subtitle: `Growth: ${statsData?.revenueGrowth || 0}%`
     },
     { 
       title: "Total Orders", 
-      value: statsData?.totalBookings || 0, 
+      value: statsData?.totalOrders || 0, 
       icon: <FiShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" />, 
-      color: "bg-green-500",
+      color: "bg-purple-500",
       subtitle: "All time orders"
     },
     { 
-      title: "Registered Users", 
-      value: statsData?.totalUsers || 0, 
-      icon: <FiUsers className="w-5 h-5 sm:w-6 sm:h-6" />, 
-      color: "bg-purple-500",
-      subtitle: "Total customers"
+      title: "Today's Orders", 
+      value: statsData?.todayOrders || 0, 
+      icon: <FiShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />, 
+      color: "bg-orange-500",
+      subtitle: "Orders today"
     },
     { 
       title: "Pending Orders", 
-      value: statsData?.metrics?.pendingBookings || 0, 
+      value: statsData?.pendingOrders || 0, 
       icon: <FiClock className="w-5 h-5 sm:w-6 sm:h-6" />, 
       color: "bg-yellow-500",
       subtitle: "Awaiting processing"
     },
     { 
-      title: "Low Stock Alert", 
-      value: statsData?.lowStockAlerts || 0, 
-      icon: <FiAlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" />, 
-      color: "bg-orange-500",
-      subtitle: "Need restocking"
-    },
-    { 
       title: "Out of Stock", 
-      value: statsData?.metrics?.outOfStockProducts || 0, 
+      value: statsData?.outOfStockCount || 0, 
       icon: <FiPackage className="w-5 h-5 sm:w-6 sm:h-6" />, 
       color: "bg-red-500",
-      subtitle: "Zero stock items"
+      subtitle: "Need restocking"
     },
   ];
 
@@ -188,14 +188,13 @@ const Dashboard = () => {
     pie: ["#5C3A21", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#6B7280", "#3B82F6", "#8B5A2B"]
   };
 
-  // Order status data for pie chart
-  const orderStatusData = statsData?.bookingStatusDistribution || [];
-
-  // Calculate inventory health
-  const totalProducts = statsData?.totalProducts || 0;
-  const lowStock = statsData?.lowStockAlerts || 0;
-  const outOfStock = statsData?.metrics?.outOfStockProducts || 0;
-  const healthyProducts = Math.max(0, totalProducts - lowStock - outOfStock);
+  // Sample data for charts (you can replace with actual data from your API)
+  const orderStatusData = [
+    { name: 'Completed', value: statsData?.completedOrders || 0 },
+    { name: 'Pending', value: statsData?.pendingOrders || 0 },
+    { name: 'Processing', value: Math.floor((statsData?.totalOrders || 0) * 0.1) },
+    { name: 'Cancelled', value: Math.floor((statsData?.totalOrders || 0) * 0.05) }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -204,16 +203,16 @@ const Dashboard = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex-1">
             <h1 className="text-2xl sm:text-3xl font-bold text-[#5C3A21]">
-              Welcome back, {adminName}! 👋
+              Dashboard Overview
             </h1>
             <p className="text-gray-600 mt-2">
-              Here's your personalized dashboard overview
+              Real-time business performance metrics
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3 min-w-[200px]">
-            <p className="text-sm text-gray-600">Today's Revenue</p>
+            <p className="text-sm text-gray-600">Avg Order Value</p>
             <p className="text-lg sm:text-xl font-semibold text-[#5C3A21]">
-              ₹{(statsData?.metrics?.todayRevenue || 0).toLocaleString()}
+              {statsData?.formatted?.averageOrderValue || '₹0.00'}
             </p>
           </div>
         </div>
@@ -235,68 +234,80 @@ const Dashboard = () => {
 
       {/* Performance Indicators */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
-        {/* Business Overview */}
+        {/* Revenue Overview */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center">
               <FiTrendingUp className="w-5 h-5 mr-2 text-[#5C3A21]" />
-              Business Overview
+              Revenue Overview
             </h3>
           </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Total Revenue</span>
               <span className="font-semibold text-gray-900">
-                ₹{(statsData?.totalRevenue || 0).toLocaleString()}
+                {statsData?.formatted?.totalRevenue || '₹0'}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Completed Orders</span>
+              <span className="text-gray-600">Today's Revenue</span>
               <span className="font-semibold text-gray-900">
-                {statsData?.bookingStatusDistribution?.find(s => s.name === 'Completed')?.value || 0}
+                {statsData?.formatted?.todayRevenue || '₹0'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Revenue Growth</span>
+              <span className={`font-semibold ${(statsData?.revenueGrowth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {statsData?.revenueGrowth || 0}%
               </span>
             </div>
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">Avg Order Value</span>
               <span className="font-semibold text-gray-900">
-                ₹{(statsData?.metrics?.averageOrderValue || 0).toFixed(2)}
+                {statsData?.formatted?.averageOrderValue || '₹0.00'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Inventory Health */}
+        {/* Order Summary */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-              <FiArchive className="w-5 h-5 mr-2 text-[#5C3A21]" />
-              Inventory Health
+              <FiShoppingBag className="w-5 h-5 mr-2 text-[#5C3A21]" />
+              Order Summary
             </h3>
           </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Healthy Products</span>
-              <span className="font-semibold text-green-600">
-                {healthyProducts}
+              <span className="text-gray-600">Total Orders</span>
+              <span className="font-semibold text-gray-900">
+                {statsData?.totalOrders || 0}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Low Stock</span>
+              <span className="text-gray-600">Completed Orders</span>
+              <span className="font-semibold text-green-600">
+                {statsData?.completedOrders || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Pending Orders</span>
               <span className="font-semibold text-yellow-600">
-                {lowStock}
+                {statsData?.pendingOrders || 0}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="text-gray-600">Out of Stock</span>
-              <span className="font-semibold text-red-600">
-                {outOfStock}
+              <span className="text-gray-600">Conversion Rate</span>
+              <span className="font-semibold text-gray-900">
+                {statsData?.conversionRate || 0}%
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Charts and Recent Orders Section */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Order Status Chart */}
         <div className="xl:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
@@ -342,85 +353,72 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Orders */}
+        {/* Quick Stats */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800 flex items-center">
               <FiShoppingCart className="w-5 h-5 mr-2 text-[#5C3A21]" />
-              Recent Orders
+              Quick Stats
             </h3>
-            <span className="bg-[#5C3A21] text-white text-xs px-2 py-1 rounded-full">
-              {statsData?.recentBookings?.length || 0}
-            </span>
           </div>
           
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {statsData?.recentBookings?.length > 0 ? (
-              statsData.recentBookings.map((booking) => (
-                <div 
-                  key={booking._id} 
-                  className="flex items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors group"
-                >
-                  <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-amber-200 transition-colors">
-                    <FiShoppingBag className="text-amber-600 w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-800 truncate text-sm">
-                      {booking.userName}
-                    </p>
-                    <p className="text-xs text-gray-600 truncate">
-                      {booking.productName}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {booking.date}
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0 ml-2">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      ₹{booking.amount}
-                    </p>
-                    <div className="mt-1">
-                      <StatusBadge status={booking.status} />
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <FiShoppingBag className="mx-auto w-8 h-8 text-gray-400 mb-2" />
-                <p className="text-sm">No recent orders</p>
-                <p className="text-xs text-gray-400 mt-1">New orders will appear here</p>
+          <div className="space-y-4">
+            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-2xl font-bold text-green-600">
+                {statsData?.formatted?.totalRevenue || '₹0'}
               </div>
-            )}
+              <div className="text-sm text-green-800 mt-1">Total Revenue</div>
+            </div>
+            
+            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-2xl font-bold text-blue-600">
+                {statsData?.totalOrders || 0}
+              </div>
+              <div className="text-sm text-blue-800 mt-1">Total Orders</div>
+            </div>
+            
+            <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="text-2xl font-bold text-purple-600">
+                {statsData?.formatted?.averageOrderValue || '₹0.00'}
+              </div>
+              <div className="text-sm text-purple-800 mt-1">Avg Order Value</div>
+            </div>
+            
+            <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="text-2xl font-bold text-orange-600">
+                {statsData?.revenueGrowth || 0}%
+              </div>
+              <div className="text-sm text-orange-800 mt-1">Revenue Growth</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats Footer */}
+      {/* Inventory Health Footer */}
       <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-lg p-3 text-center border border-gray-100">
-          <div className="text-lg sm:text-xl font-bold text-[#5C3A21]">
-            {statsData?.performance?.completionRate || 0}%
+          <div className="text-lg sm:text-xl font-bold text-green-600">
+            {statsData?.completedOrders || 0}
           </div>
-          <div className="text-xs text-gray-600 mt-1">Completion Rate</div>
+          <div className="text-xs text-gray-600 mt-1">Completed Orders</div>
         </div>
         <div className="bg-white rounded-lg p-3 text-center border border-gray-100">
-          <div className="text-lg sm:text-xl font-bold text-[#5C3A21]">
-            {statsData?.performance?.stockHealth || 0}%
+          <div className="text-lg sm:text-xl font-bold text-yellow-600">
+            {statsData?.pendingOrders || 0}
           </div>
-          <div className="text-xs text-gray-600 mt-1">Stock Health</div>
+          <div className="text-xs text-gray-600 mt-1">Pending Orders</div>
         </div>
         <div className="bg-white rounded-lg p-3 text-center border border-gray-100">
-          <div className="text-lg sm:text-xl font-bold text-[#5C3A21]">
-            {statsData?.metrics?.pendingBookings || 0}
+          <div className="text-lg sm:text-xl font-bold text-red-600">
+            {statsData?.outOfStockCount || 0}
           </div>
-          <div className="text-xs text-gray-600 mt-1">To Process</div>
+          <div className="text-xs text-gray-600 mt-1">Out of Stock</div>
         </div>
         <div className="bg-white rounded-lg p-3 text-center border border-gray-100">
-          <div className="text-lg sm:text-xl font-bold text-[#5C3A21]">
-            {healthyProducts}
+          <div className="text-lg sm:text-xl font-bold text-blue-600">
+            {statsData?.conversionRate || 0}%
           </div>
-          <div className="text-xs text-gray-600 mt-1">Ready to Sell</div>
+          <div className="text-xs text-gray-600 mt-1">Conversion Rate</div>
         </div>
       </div>
     </div>

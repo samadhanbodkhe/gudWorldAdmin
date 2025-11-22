@@ -17,7 +17,7 @@ export const dashboardApi = createApi({
     tagTypes: ["Dashboard"],
     endpoints: (builder) => ({
         getDashboardStats: builder.query({
-            query: () => "/getDashboardStats",
+            query: () => "/getQuickStats", // ✅ FIXED: Changed from getDashboardStats to getQuickStats
             providesTags: ["Dashboard"],
         }),
         getRealTimeUpdates: builder.query({
