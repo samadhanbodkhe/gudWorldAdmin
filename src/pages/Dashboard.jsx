@@ -13,7 +13,8 @@ import {
   FiStar,
   FiRefreshCw,
   FiShoppingCart,
-  FiArchive
+  FiArchive,
+  FiXCircle
 } from "react-icons/fi";
 import {
   BarChart,
@@ -170,11 +171,11 @@ const Dashboard = () => {
       subtitle: "Awaiting processing"
     },
     { 
-      title: "Out of Stock", 
-      value: statsData?.outOfStockCount || 0, 
-      icon: <FiPackage className="w-5 h-5 sm:w-6 sm:h-6" />, 
+      title: "Cancelled Orders", 
+      value: statsData?.cancelledOrders || 0, 
+      icon: <FiXCircle className="w-5 h-5 sm:w-6 sm:h-6" />, 
       color: "bg-red-500",
-      subtitle: "Need restocking"
+      subtitle: "Cancelled orders"
     },
   ];
 
@@ -188,13 +189,12 @@ const Dashboard = () => {
     pie: ["#5C3A21", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#6B7280", "#3B82F6", "#8B5A2B"]
   };
 
-  // Sample data for charts (you can replace with actual data from your API)
+  // ✅ FIXED: Order status data with actual cancelled orders count
   const orderStatusData = [
     { name: 'Completed', value: statsData?.completedOrders || 0 },
     { name: 'Pending', value: statsData?.pendingOrders || 0 },
-    { name: 'Processing', value: Math.floor((statsData?.totalOrders || 0) * 0.1) },
-    { name: 'Cancelled', value: Math.floor((statsData?.totalOrders || 0) * 0.05) }
-  ];
+    { name: 'Cancelled', value: statsData?.cancelledOrders || 0 }
+  ].filter(item => item.value > 0); // Only show statuses with orders
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -298,9 +298,9 @@ const Dashboard = () => {
               </span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="text-gray-600">Conversion Rate</span>
-              <span className="font-semibold text-gray-900">
-                {statsData?.conversionRate || 0}%
+              <span className="text-gray-600">Cancelled Orders</span>
+              <span className="font-semibold text-red-600">
+                {statsData?.cancelledOrders || 0}
               </span>
             </div>
           </div>
@@ -410,15 +410,15 @@ const Dashboard = () => {
         </div>
         <div className="bg-white rounded-lg p-3 text-center border border-gray-100">
           <div className="text-lg sm:text-xl font-bold text-red-600">
-            {statsData?.outOfStockCount || 0}
+            {statsData?.cancelledOrders || 0}
           </div>
-          <div className="text-xs text-gray-600 mt-1">Out of Stock</div>
+          <div className="text-xs text-gray-600 mt-1">Cancelled Orders</div>
         </div>
         <div className="bg-white rounded-lg p-3 text-center border border-gray-100">
           <div className="text-lg sm:text-xl font-bold text-blue-600">
-            {statsData?.conversionRate || 0}%
+            {statsData?.outOfStockCount || 0}
           </div>
-          <div className="text-xs text-gray-600 mt-1">Conversion Rate</div>
+          <div className="text-xs text-gray-600 mt-1">Out of Stock</div>
         </div>
       </div>
     </div>
