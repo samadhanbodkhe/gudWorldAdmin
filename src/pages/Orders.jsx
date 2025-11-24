@@ -35,6 +35,7 @@ import {
   FiClock,
   FiAlertCircle,
 } from "react-icons/fi";
+import { FaIndianRupeeSign } from "react-icons/fa6";
 
 const Orders = () => {
   // State for filters and modals
@@ -220,7 +221,7 @@ const Orders = () => {
 
   const handleProcessRefund = async (order) => {
     setEditingOrder(order);
-    setRefundAmount(order.finalAmount);
+    setRefundAmount(getRefundableAmount(order));
     setRefundReason("");
     setShowRefundModal(true);
   };
@@ -233,8 +234,9 @@ const Orders = () => {
       return;
     }
 
-    if (refundAmount > editingOrder.finalAmount) {
-      toast.error("Refund amount cannot exceed order amount");
+    const maxRefundable = getRefundableAmount(editingOrder);
+    if (refundAmount > maxRefundable) {
+      toast.error(`Refund amount cannot exceed maximum refundable amount of ${formatCurrency(maxRefundable)}`);
       return;
     }
 
@@ -552,7 +554,7 @@ const Orders = () => {
                 <p className="text-2xl font-bold text-amber-900">{formatCurrency(paymentStats.refundedAmount)}</p>
               </div>
               <div className="p-3 bg-orange-100 rounded-full">
-                <FiDollarSign className="w-6 h-6 text-orange-600" />
+                <FaIndianRupeeSign className="w-6 h-6 text-orange-600" />
               </div>
             </div>
           </div>
@@ -1180,12 +1182,12 @@ const Orders = () => {
           </div>
         )}
 
-        {/* Update Status Modal */}
+        {/* Update Status Modal - FIXED RESPONSIVE DESIGN */}
         {showStatusModal && editingOrder && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
+            <div className="bg-white rounded-2xl w-full max-w-md mx-4 max-h-[85vh] flex flex-col">
+              <div className="p-6 flex-shrink-0 border-b border-amber-200">
+                <div className="flex justify-between items-center">
                   <h2 className="text-xl font-bold text-amber-900">Update Order Status</h2>
                   <button
                     onClick={() => setShowStatusModal(false)}
@@ -1194,8 +1196,10 @@ const Orders = () => {
                     <FiX className="w-5 h-5" />
                   </button>
                 </div>
+              </div>
 
-                <form onSubmit={handleStatusSubmit} className="space-y-4">
+              <form onSubmit={handleStatusSubmit} className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-amber-700 mb-2">
                       Order Status
@@ -1228,12 +1232,14 @@ const Orders = () => {
                       />
                     </div>
                   )}
+                </div>
 
-                  <div className="flex gap-3 pt-4">
+                <div className="p-6 flex-shrink-0 border-t border-amber-200 bg-amber-50 rounded-b-2xl">
+                  <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowStatusModal(false)}
-                      className="flex-1 px-6 py-3 border border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 transition-all duration-200 font-medium"
+                      className="flex-1 px-6 py-3 border border-amber-300 text-amber-700 rounded-xl hover:bg-amber-100 transition-all duration-200 font-medium"
                     >
                       Cancel
                     </button>
@@ -1245,18 +1251,18 @@ const Orders = () => {
                       {updatingStatus ? "Updating..." : "Update Status"}
                     </button>
                   </div>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           </div>
         )}
 
-        {/* Cancel Order Modal */}
+        {/* Cancel Order Modal - FIXED RESPONSIVE DESIGN */}
         {showCancelModal && editingOrder && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
+            <div className="bg-white rounded-2xl w-full max-w-md mx-4 max-h-[85vh] flex flex-col">
+              <div className="p-6 flex-shrink-0 border-b border-amber-200">
+                <div className="flex justify-between items-center">
                   <h2 className="text-xl font-bold text-amber-900">Cancel Order</h2>
                   <button
                     onClick={() => setShowCancelModal(false)}
@@ -1265,8 +1271,10 @@ const Orders = () => {
                     <FiX className="w-5 h-5" />
                   </button>
                 </div>
+              </div>
 
-                <form onSubmit={handleCancelSubmit} className="space-y-4">
+              <form onSubmit={handleCancelSubmit} className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-amber-700 mb-2">
                       Cancellation Reason *
@@ -1276,7 +1284,7 @@ const Orders = () => {
                       onChange={(e) => setCancellationReason(e.target.value)}
                       placeholder="Please provide a reason for cancellation..."
                       rows="4"
-                      className="w-full px-4 py-3 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-amber-50 transition-all duration-200"
+                      className="w-full px-4 py-3 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-amber-50 transition-all duration-200 resize-none"
                       required
                     />
                   </div>
@@ -1294,12 +1302,14 @@ const Orders = () => {
                       ⚠️ This action cannot be undone. The order will be cancelled and stock will be returned to inventory.
                     </p>
                   </div>
+                </div>
 
-                  <div className="flex gap-3 pt-4">
+                <div className="p-6 flex-shrink-0 border-t border-amber-200 bg-amber-50 rounded-b-2xl">
+                  <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowCancelModal(false)}
-                      className="flex-1 px-6 py-3 border border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 transition-all duration-200 font-medium"
+                      className="flex-1 px-6 py-3 border border-amber-300 text-amber-700 rounded-xl hover:bg-amber-100 transition-all duration-200 font-medium"
                     >
                       Cancel
                     </button>
@@ -1311,18 +1321,18 @@ const Orders = () => {
                       {cancelling ? "Cancelling..." : "Confirm Cancellation"}
                     </button>
                   </div>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           </div>
         )}
 
-        {/* Process Refund Modal */}
+        {/* Process Refund Modal - FIXED RESPONSIVE DESIGN */}
         {showRefundModal && editingOrder && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
+            <div className="bg-white rounded-2xl w-full max-w-md mx-4 max-h-[85vh] flex flex-col">
+              <div className="p-6 flex-shrink-0 border-b border-amber-200">
+                <div className="flex justify-between items-center">
                   <h2 className="text-xl font-bold text-amber-900">Process Refund</h2>
                   <button
                     onClick={() => setShowRefundModal(false)}
@@ -1331,10 +1341,12 @@ const Orders = () => {
                     <FiX className="w-5 h-5" />
                   </button>
                 </div>
+              </div>
 
-                <form onSubmit={handleRefundSubmit} className="space-y-4">
+              <form onSubmit={handleRefundSubmit} className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
                   <div className="bg-amber-50 rounded-xl p-4">
-                    <div className="text-sm text-amber-700">
+                    <div className="text-sm text-amber-700 space-y-2">
                       <p><strong>Order:</strong> #{editingOrder.invoiceNumber || editingOrder._id?.slice(-8).toUpperCase()}</p>
                       <p><strong>Customer:</strong> {getCustomerName(editingOrder)}</p>
                       <p><strong>Paid Amount:</strong> {formatCurrency(editingOrder.finalAmount)}</p>
@@ -1373,7 +1385,7 @@ const Orders = () => {
                       onChange={(e) => setRefundReason(e.target.value)}
                       placeholder="Please provide a reason for refund..."
                       rows="3"
-                      className="w-full px-4 py-3 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-amber-50 transition-all duration-200"
+                      className="w-full px-4 py-3 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-amber-50 transition-all duration-200 resize-none"
                       required
                     />
                   </div>
@@ -1384,25 +1396,27 @@ const Orders = () => {
                       A 2% processing fee may be deducted by the payment gateway.
                     </p>
                   </div>
+                </div>
 
-                  <div className="flex gap-3 pt-4">
+                <div className="p-6 flex-shrink-0 border-t border-amber-200 bg-amber-50 rounded-b-2xl">
+                  <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowRefundModal(false)}
-                      className="flex-1 px-6 py-3 border border-amber-300 text-amber-700 rounded-xl hover:bg-amber-50 transition-all duration-200 font-medium"
+                      className="flex-1 px-6 py-3 border border-amber-300 text-amber-700 rounded-xl hover:bg-amber-100 transition-all duration-200 font-medium"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      disabled={processingRefund || refundAmount > getRefundableAmount(editingOrder)}
+                      disabled={processingRefund || refundAmount > getRefundableAmount(editingOrder) || refundAmount <= 0}
                       className="flex-1 px-6 py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {processingRefund ? "Processing..." : "Process Refund"}
                     </button>
                   </div>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           </div>
         )}

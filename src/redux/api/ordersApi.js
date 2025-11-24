@@ -50,7 +50,6 @@ export const ordersApi = createApi({
       }),
       invalidatesTags: ["Order"],
     }),
-
     // Cancel order
     cancelOrder: builder.mutation({
       query: ({ id, cancellationReason }) => ({
@@ -86,6 +85,14 @@ export const ordersApi = createApi({
       query: (id) => `/getCancelledOrderById/${id}`,
       providesTags: ["CancelledOrder"],
     }),
+    processRefund: builder.mutation({
+      query: ({ id, refundAmount, refundReason }) => ({
+        url: `/admin/booking/refund/${id}`,
+        method: "POST",
+        body: { refundAmount, refundReason },
+      }),
+      invalidatesTags: ["Order", "CancelledOrder"],
+    }),
   }),
 });
 
@@ -96,6 +103,7 @@ export const {
   useCompleteOrderMutation,
   useCancelOrderMutation,
   useProcessRefundMutation,
-  useGetCancelledOrdersQuery, // NEW
-  useGetCancelledOrderByIdQuery, // NEW
+  useGetCancelledOrdersQuery,
+  useGetCancelledOrderByIdQuery,
+  usep
 } = ordersApi;

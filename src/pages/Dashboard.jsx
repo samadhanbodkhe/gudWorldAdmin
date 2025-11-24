@@ -16,6 +16,8 @@ import {
   FiArchive,
   FiXCircle
 } from "react-icons/fi";
+import { FaIndianRupeeSign } from "react-icons/fa6";
+
 import {
   BarChart,
   Bar,
@@ -138,7 +140,7 @@ const Dashboard = () => {
     { 
       title: "Total Revenue", 
       value: statsData?.formatted?.totalRevenue || '₹0', 
-      icon: <FiDollarSign className="w-5 h-5 sm:w-6 sm:h-6" />, 
+      icon: <FaIndianRupeeSign  className="w-5 h-5 sm:w-6 sm:h-6" />, 
       color: "bg-green-500",
       subtitle: "All time revenue"
     },
