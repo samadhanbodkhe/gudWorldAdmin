@@ -801,7 +801,7 @@ const Orders = () => {
                             className="p-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-all duration-200"
                             title="Process Refund"
                           >
-                            <FiDollarSign className="w-4 h-4" />
+                            <FaIndianRupeeSign className="w-4 h-4" />
                           </button>
                         )}
                         {order.status === "DELIVERED" && (
