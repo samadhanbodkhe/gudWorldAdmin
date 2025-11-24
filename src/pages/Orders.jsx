@@ -482,7 +482,7 @@ const Orders = () => {
               onClick={() => handleProcessRefund(order)}
               className="flex items-center gap-1 text-orange-600 hover:text-orange-800 transition-colors p-2 text-xs font-medium"
             >
-              <FiDollarSign className="w-3 h-3" />
+              <FaIndianRupeeSign className="w-3 h-3" />
               Refund
             </button>
           )}
